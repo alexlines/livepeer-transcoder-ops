@@ -48,3 +48,14 @@ chmod 0755 livepeer_linux
 ./livepeer_linux -testnet
 # exit the screen session
 ./livepeer_cli_linux
+
+# get ether from crypto faucet in dashboard if necessary http://eth-testnet.livepeer.org
+# copy address of ether wallet display in livepeer_cli_linux at "Account Eth Addr"
+# paste it into a secret github gist, and copy the url of that gist into the faucet above
+# and select to get new ether
+
+# back in the livepeer_cli_linux, run "1." to get node status to see updated Eth balance
+
+# now get some test LivePeer tokens through the CLI, option "11"
+# check the token balance using the CLI
+
