@@ -1,0 +1,50 @@
+# I went with 17.04 ami-7b4d7900 on a t2.medium
+# https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-7b4d7900
+# wanted to make sure we got at least golang-1.7
+
+# Test net dashboard http://eth-testnet.livepeer.org
+# install livepeer node from readme at https://github.com/livepeer/go-livepeer
+sudo apt-get update
+sudo apt-get install golang
+
+# edit .profile:
+
+  # edit the version number here as appropriate:
+  export GOROOT="/usr/lib/go-1.6"
+  export GOPATH="$HOME/goprojects"
+
+  # set PATH so it includes user's private bin directories
+  PATH="$HOME/bin:$HOME/.local/bin:$PATH:$GOPATH/bin"
+  
+mkdir goprojects
+
+# ugh this isn't building right now, 
+# just download livepeer_linux and livepeer_linux_cli from https://github.com/livepeer/go-livepeer/releases 
+git clone git@github.com:livepeer/go-livepeer.git
+cd go-livepeer
+go get ./...
+go build ./cmd/livepeer/livepeer.go
+
+sudo apt-get install ffmpeg
+
+# install local ethereum node, https://github.com/ethereum/go-ethereum/wiki/Building-Ethereum
+sudo apt-get install software-properties-common
+sudo add-apt-repository -y ppa:ethereum/ethereum
+sudo apt-get update
+sudo apt-get install ethereum
+geth account new
+# Address: {eee665a9f5bcb3a3e57c66571bbf144ab308d1cf} and pw: emigre smuggle lumbago
+mkdir ~/.lpGeth
+wget http://eth-testnet.livepeer.org/lptestnet.json
+# if it complains about "field Genesis.number" delete the "number" field from lptestnet.json
+geth --datadir ~/.lpGeth init lptestnet.json
+# run geth in a screen session
+screen
+geth --datadir ~/.lpGeth --networkid 858585 --bootnodes "enode://080ebca2373d15762c29ca8d85ddc848f10a7ffc745f7110cacba4694728325d645292cb512d7168323bd0af1650fca825ff54c8dba20aec8878498fae3ff3c6@18.221.67.74:30303"
+# exit the screen session
+# run livepeer node in another screen session
+screen
+chmod 0755 livepeer_linux 
+./livepeer_linux -testnet
+# exit the screen session
+./livepeer_cli_linux
