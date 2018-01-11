@@ -58,4 +58,4 @@ chmod 0755 livepeer_linux
 
 # now get some test LivePeer tokens through the CLI, option "11"
 # check the token balance using the CLI
-
+# update with notes inside project dir
