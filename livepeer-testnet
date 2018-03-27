@@ -1,6 +1,25 @@
-# I went with 17.04 ami-7b4d7900 on a t2.medium
+# working from these docs https://livepeer.readthedocs.io/en/latest/getting_started.html 
+# I went with 17.04 ami-7b4d7900 on a t2.medium in us-east-1
 # https://console.aws.amazon.com/ec2/home?region=us-east-1#launchAmi=ami-7b4d7900
 # wanted to make sure we got at least golang-1.7
+
+# needs a specially-built (I think) statically compiled version of ffmpeg
+# from this repo https://github.com/livepeer/ffmpeg-static
+# can grab the linux x64 binary from this url and move it into $PATH
+cd
+curl -s -L https://github.com/livepeer/ffmpeg-static/raw/master/bin/linux/x64/ffmpeg > ffmpeg
+chmod 0755 ffmpeg
+sudo chown root:root ffmpeg
+sudo mv -i ffmpeg /usr/local/bin/
+
+# Download livepeer and livepeer_cli from https://github.com/livepeer/go-livepeer/releases. 
+# Choose the _darwin version for OS X and the _linux versions for Linux, and then untar them:
+curl -s -L https://github.com/livepeer/go-livepeer/releases/download/0.1.14/livepeer_linux.tar > livepeer_linux.tar
+tar xvfp livepeer_linux.tar
+cd livepeer_linux/
+./livepeer -rinkeby
+
+# new address created 0xEAfEdD359d7D2B9Ca6F97054f76328064E0E26fC with pw: emigre smuggle lumbago
 
 # Test net dashboard http://eth-testnet.livepeer.org
 # install livepeer node from readme at https://github.com/livepeer/go-livepeer
