@@ -21,6 +21,7 @@ cd livepeer_linux/
 
 # new address created 0xEAfEdD359d7D2B9Ca6F97054f76328064E0E26fC with pw: emigre smuggle lumbago
 
+
 # Test net dashboard http://eth-testnet.livepeer.org
 # install livepeer node from readme at https://github.com/livepeer/go-livepeer
 sudo apt-get update
