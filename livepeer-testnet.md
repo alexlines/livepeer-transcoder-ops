@@ -117,3 +117,24 @@ chmod 0755 livepeer_linux
   * update with notes inside project dir  
   
   
+**Test ETH on Rinkeby**  
+  * Figuring out the correct address to request test ETH to from Rinkeby faucet:
+  * When starting ./livepeer -rinkeby, the output says:  
+```
+***Livepeer is running on the Rinkeby test network: 0x37dc71366ec655093b9930bc816e16e6b587f968***
+``` 
+  * but livepeer_cli in 'node status' shows:
+```
+*--------------*--------------------------------------------*
+|  ETH Account | 0x0C47D7852c14001b78c157Fd6Fc8938488CD45F0 |
+*--------------*--------------------------------------------*
+```
+  * and keystore filenames are: 
+```
+$ ls -Fl ~/.lpData/keystore/
+total 4
+-rw------- 1 ubuntu ubuntu 491 May  2 19:12 UTC--2018-05-02T19-12-28.040032202Z--0c47d7852c14001b78c157fd6fc8938488cd45f0
+```
+  * so to confirm, when I requested ETH from [rinkeby faucet](https://faucet.rinkeby.io/), I requested it be sent to address 0x0C47D7852c14001b78c157Fd6Fc8938488CD45F0 in this [g+ post](https://plus.google.com/+alexlines/posts/HesTiinUH9v) and it worked fine.  
+  
+  
