@@ -15,6 +15,7 @@ aws --profile notation ec2 run-instances \
 
 
 **Questions**  
+  * Some of these could go into FAQ
   * Should I set up a public elastic ip?  
   * DNS name?  
   * What ports should be open? Open to the world?  
@@ -28,6 +29,7 @@ aws --profile notation ec2 run-instances \
   * Securing your node and access to private ETH key  
   * Process supervisor to keep livepeer running (or restart periodically) - systemd, etc.  
   * Unclear from docs: need to run a local geth or not? https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143  
+  * Need a full copy of ETH blockchain?  
   * Unclear from docs: need to install ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
 
 
