@@ -6,6 +6,8 @@
   * This will spin up a [c4.2xlarge](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly) instance in us-east with 15GB RAM, 8vCPUs, "High" network perf, [EBS optimized](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html), and a 32GB [gp2 standard SSD](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_gp2). Cost ~$300/month (on-demand).  
   * I'm using the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with [this configuration](https://gist.github.com/alexlines/f8a83c4705755b74e7592e686a4832e9)  
   * **Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You need to [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have, so adjust accordingly.  
+
+
 ```
 aws --profile notation ec2 run-instances \
     --cli-input-json file://livepeer-transcoder-ec2-config.json
@@ -28,9 +30,11 @@ aws --profile notation ec2 run-instances \
   * Unclear from docs: need to install ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
 
 
-* needs a specially-built (I think) statically compiled version of ffmpeg
-* from this repo https://github.com/livepeer/ffmpeg-static
-* can grab the linux x64 binary from this url and move it into $PATH
+**ffmpeg**  
+  * This section may be obsolete  
+  * needs a specially-built (I think) statically compiled version of ffmpeg  
+  * from this repo https://github.com/livepeer/ffmpeg-static  
+  * can grab the linux x64 binary from this url and move it into $PATH  
 ```
 cd
 curl -s -L https://github.com/livepeer/ffmpeg-static/raw/master/bin/linux/x64/ffmpeg > ffmpeg
@@ -39,7 +43,9 @@ sudo chown root:root ffmpeg
 sudo mv -i ffmpeg /usr/local/bin/
 ```
 
-* Download the latest mainnet-targeted livepeer and livepeer_cli from https://github.com/livepeer/go-livepeer/releases.  
+**Grab LivePeer binaries**  
+  * You can build from scratch if you want but why ...
+  * Download the latest mainnet-targeted livepeer and livepeer_cli from https://github.com/livepeer/go-livepeer/releases.  
 ```
 curl -s -L https://github.com/livepeer/go-livepeer/releases/download/0.2.0/livepeer_linux.tar > livepeer_linux.tar
 tar xvfp livepeer_linux.tar
@@ -48,12 +54,8 @@ cd livepeer_linux/
 ```
 
 
-* new address created 0xEAfEdD359d7D2B9Ca6F97054f76328064E0E26fC with pw: emigre smuggle lumbago
-
-
-* Test net dashboard http://eth-testnet.livepeer.org
-* install livepeer node from readme at https://github.com/livepeer/go-livepeer
-
+**Build from scratch if you must**  
+  * See https://github.com/livepeer/go-livepeer  
 ```
 sudo apt-get update
 sudo apt-get install golang
@@ -102,13 +104,15 @@ chmod 0755 livepeer_linux
 ./livepeer_cli_linux
 ```
 
-* get ether from crypto faucet in dashboard if necessary http://eth-testnet.livepeer.org
-* copy address of ether wallet display in livepeer_cli_linux at "Account Eth Addr"
-* paste it into a secret github gist, and copy the url of that gist into the faucet above
-* and select to get new ether
 
-* back in the livepeer_cli_linux, run "1." to get node status to see updated Eth balance
-
-* now get some test LivePeer tokens through the CLI, option "11"
-* check the token balance using the CLI
-* update with notes inside project dir
+**Add'l notes**  
+  * get ether from crypto faucet in dashboard if necessary http://eth-testnet.livepeer.org
+  * copy address of ether wallet display in livepeer_cli_linux at "Account Eth Addr"
+  * paste it into a secret github gist, and copy the url of that gist into the faucet above
+  * and select to get new ether
+  * back in the livepeer_cli_linux, run "1." to get node status to see updated Eth balance
+  * now get some test LivePeer tokens through the CLI, option "11"
+  * check the token balance using the CLI
+  * update with notes inside project dir  
+  
+  
