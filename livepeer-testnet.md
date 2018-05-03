@@ -19,7 +19,16 @@ aws --profile notation ec2 run-instances \
   * Should I set up a public elastic ip?  
   * DNS name?  
   * What ports should be open? Open to the world?  
+    * Video Ingest Endpoint - rtmp://localhost:1935  
+    * livepeer_cli params: --http value local http port (default: "8935")  - this is a control port via http, I would make sure this is protected, can set configs here, bond(), etc.  
+    * yep, this is the port to poll to track status and info. Available commands are documented in [webserver.go](https://github.com/livepeer/go-livepeer/blob/ec288f43b60fbf3bd61f81b636538b5b004aaa86/server/webserver.go)  
+    * Seems like it can send server metrics to http://viz.livepeer.org:8081/metrics ? see [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go) interesting that it can end metrics by default, wonder if that can be redirected and to what kind of server. you can also specify the monitor host to send to  
+    * Maybe to the monitor server here? https://github.com/livepeer/go-livepeer/blob/master/monitor/monitor.go  
+    * livepeer_cli params: --rtmp value local rtmp port (default: "1935")  
   * Raise filehandle limit  
+  * What livepeer / ipfs / etc logs needs to be rotated?  
+  * Make sure timesync is active, ntpd or whatever it is now  
+  * Maybe just use ELB's for health checks (not sure about classic ELB vs ALB yet)  
   * Testnet vs mainnet  
   * What's the .eth name service to translate from name -> eth address?  
   * How to import an existing ETH account / keys? Might be a [current bug](https://github.com/livepeer/go-livepeer/issues/304)  
@@ -123,7 +132,7 @@ chmod 0755 livepeer_linux
   
 **Test ETH on Rinkeby**  
   * Figuring out the correct address to request test ETH to from Rinkeby faucet:
-  * When starting ./livepeer -rinkeby, the output says:  
+  * When starting `./livepeer --rinkeby` the output says:  
 ```
 ***Livepeer is running on the Rinkeby test network: 0x37dc71366ec655093b9930bc816e16e6b587f968***
 ``` 
@@ -135,10 +144,13 @@ chmod 0755 livepeer_linux
 ```
   * and keystore filenames are: 
 ```
-$ ls -Fl ~/.lpData/keystore/
-total 4
--rw------- 1 ubuntu ubuntu 491 May  2 19:12 UTC--2018-05-02T19-12-28.040032202Z--0c47d7852c14001b78c157fd6fc8938488cd45f0
+$ ls -1 ~/.lpData/keystore/
+UTC--2018-05-02T19-12-28.040032202Z--0c47d7852c14001b78c157fd6fc8938488cd45f0
 ```
   * so to confirm, when I requested ETH from [rinkeby faucet](https://faucet.rinkeby.io/), I requested it be sent to address 0x0C47D7852c14001b78c157Fd6Fc8938488CD45F0 in this [g+ post](https://plus.google.com/+alexlines/posts/HesTiinUH9v) and it worked fine.  
+  * To get test livepeer tokens (LPT), while `livepeer --rinkeby` is running in another terminal or under `screen`, run `livepeer_cli` and select option `10. Get test LPT` sometimes it fails and may need to request again, can watch the console log of `livpeer --rinkeby` to see status.  
   
+**HTTP Query interface**  
+  * `curl http://localhost:8935/getAvailableTranscodingOptions`  
+  * Can also set broadcast config by POST'ing params to http://localhost:8935/setBroadcastConfig  
   
