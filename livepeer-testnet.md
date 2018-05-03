@@ -23,6 +23,8 @@ aws --profile notation ec2 run-instances \
   * Testnet vs mainnet  
   * What's the .eth name service to translate from name -> eth address?  
   * How to import an existing ETH account / keys? Might be a [current bug](https://github.com/livepeer/go-livepeer/issues/304)  
+  * Is there anything to backup?  
+  * What about using vault or something for private keys? 
   * Guidelines on setting up basic monitoring / alerting  
     * Custom nagios or cloudwatch plugin (possible?) to do health check requests (maybe ELB?) and maybe check basic stats  
     * Is there an admin interface available via network - http, etc? Or do you need to build an http request -> livepeer_cli  
