@@ -48,18 +48,6 @@ aws --profile notation ec2 run-instances \
   * How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?  
 
 
-**ffmpeg**  
-  * This section may be obsolete  
-  * needs a specially-built (I think) statically compiled version of ffmpeg  
-  * from this repo https://github.com/livepeer/ffmpeg-static  
-  * can grab the linux x64 binary from this url and move it into $PATH  
-```
-cd
-curl -s -L https://github.com/livepeer/ffmpeg-static/raw/master/bin/linux/x64/ffmpeg > ffmpeg
-chmod 0755 ffmpeg
-sudo chown root:root ffmpeg
-sudo mv -i ffmpeg /usr/local/bin/
-```
 
 **Grab LivePeer binaries**  
   * You can build from scratch if you want but why ...
@@ -120,20 +108,9 @@ chmod 0755 livepeer_linux
 ./livepeer_linux -testnet
 # exit the screen session
 ./livepeer_cli_linux
-```
+```  
 
 
-**Add'l notes**  
-  * get ether from crypto faucet in dashboard if necessary http://eth-testnet.livepeer.org
-  * copy address of ether wallet display in livepeer_cli_linux at "Account Eth Addr"
-  * paste it into a secret github gist, and copy the url of that gist into the faucet above
-  * and select to get new ether
-  * back in the livepeer_cli_linux, run "1." to get node status to see updated Eth balance
-  * now get some test LivePeer tokens through the CLI, option "11"
-  * check the token balance using the CLI
-  * update with notes inside project dir  
-  
-  
 **Test ETH on Rinkeby**  
   * Figuring out the correct address to request test ETH to from Rinkeby faucet:
   * When starting `./livepeer --rinkeby` the output says:  
