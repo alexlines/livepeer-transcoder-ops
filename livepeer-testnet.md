@@ -24,6 +24,7 @@ aws --profile notation ec2 run-instances \
     * yep, this is the port to poll to track status and info. Available commands are documented in [webserver.go](https://github.com/livepeer/go-livepeer/blob/ec288f43b60fbf3bd61f81b636538b5b004aaa86/server/webserver.go)  
     * Seems like it can send server metrics to http://viz.livepeer.org:8081/metrics ? see [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go) interesting that it can end metrics by default, wonder if that can be redirected and to what kind of server. you can also specify the monitor host to send to  
     * Maybe to the monitor server here? https://github.com/livepeer/go-livepeer/blob/master/monitor/monitor.go  
+    * Looks like there's a separate monitor server project https://github.com/livepeer/streamingviz  ... although it hasn't been touched in a year  
     * livepeer_cli params: --rtmp value local rtmp port (default: "1935")  
   * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and elsewhere  
   * What livepeer / ipfs / etc logs needs to be rotated?  
@@ -159,6 +160,7 @@ UTC--2018-05-02T19-12-28.040032202Z--0c47d7852c14001b78c157fd6fc8938488cd45f0
   * Then run the `./livepeer_cli` in another terminal to register as a transcoder
     * Choose `15. Become a transcoder`  and choose `PricePerSegment,` `FeeShare,` `BlockRewardCut,` and how much LPT to bond to yourself.  
   * Your transcoder will not become active until the next round starts - that's currently a period of 1 day.  
+  * Check your status on the explore page https://explorer.livepeer.org/accounts/0x0C47D7852c14001b78c157Fd6Fc8938488CD45F0/transcoding  
   
 **HTTP Query interface**  
   * `curl http://localhost:8935/getAvailableTranscodingOptions`  
