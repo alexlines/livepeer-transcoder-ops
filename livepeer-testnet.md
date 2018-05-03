@@ -42,6 +42,7 @@ aws --profile notation ec2 run-instances \
   * Unclear from docs: need to run a local geth or not? https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143  
   * Need a full copy of ETH blockchain?  
   * Unclear from docs: need to install ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
+  * If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network. hmm how to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url")  (from livepeer.go)    
 
 
 **ffmpeg**  
