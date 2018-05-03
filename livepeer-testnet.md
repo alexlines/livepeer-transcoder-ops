@@ -25,7 +25,7 @@ aws --profile notation ec2 run-instances \
     * Seems like it can send server metrics to http://viz.livepeer.org:8081/metrics ? see [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go) interesting that it can end metrics by default, wonder if that can be redirected and to what kind of server. you can also specify the monitor host to send to  
     * Maybe to the monitor server here? https://github.com/livepeer/go-livepeer/blob/master/monitor/monitor.go  
     * livepeer_cli params: --rtmp value local rtmp port (default: "1935")  
-  * Raise filehandle limit  
+  * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and elsewhere  
   * What livepeer / ipfs / etc logs needs to be rotated?  
   * Make sure timesync is active, ntpd or whatever it is now  
   * Maybe just use ELB's for health checks (not sure about classic ELB vs ALB yet)  
@@ -149,6 +149,13 @@ UTC--2018-05-02T19-12-28.040032202Z--0c47d7852c14001b78c157fd6fc8938488cd45f0
 ```
   * so to confirm, when I requested ETH from [rinkeby faucet](https://faucet.rinkeby.io/), I requested it be sent to address 0x0C47D7852c14001b78c157Fd6Fc8938488CD45F0 in this [g+ post](https://plus.google.com/+alexlines/posts/HesTiinUH9v) and it worked fine.  
   * To get test livepeer tokens (LPT), while `livepeer --rinkeby` is running in another terminal or under `screen`, run `livepeer_cli` and select option `10. Get test LPT` sometimes it fails and may need to request again, can watch the console log of `livpeer --rinkeby` to see status.  
+  * To run as a transcoder. First kill the running process `livepeer --rinkeby` and then start it with transcoder flags:  
+  ```
+  ./livepeer --rinkeby --transcoder --publicIP <public ip>  
+  ```
+  * Then run the `./livepeer_cli` in another terminal to register as a transcoder
+    * Choose `15. Become a transcoder`  and choose `PricePerSegment,` `FeeShare,` `BlockRewardCut,` and how much LPT to bond to yourself.  
+  * Your transcoder will not become active until the next round starts - that's currently a period of 1 day.  
   
 **HTTP Query interface**  
   * `curl http://localhost:8935/getAvailableTranscodingOptions`  
