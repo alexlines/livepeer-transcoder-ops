@@ -16,15 +16,15 @@ aws --profile notation ec2 run-instances \
 
 **Questions**  
   **Ops TODO**  
-  * Set up a public elastic ip  
-  * DNS name?  
-  * [Dockerize?](https://github.com/livepeer/docker-livepeer)  
-  * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and elsewhere  
-  * What livepeer / ipfs / etc logs needs to be rotated?  
+  * Set up a public elastic ip   
+  * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and elsewhere    
   * Make sure timesync is active, ntpd or whatever it is now  
   * Process supervisor to keep livepeer running (or restart periodically) - systemd, etc.    
   * Maybe just use ELB's for health checks (not sure about classic ELB vs ALB yet)  
-  * What about using vault or something for private keys? 
+  * DNS name?  
+  * [Dockerize?](https://github.com/livepeer/docker-livepeer)  
+  * What livepeer / ipfs / etc logs needs to be rotated?   
+  * What about using [vault](https://www.hashicorp.com/blog/using-vault-to-build-an-ethereum-wallet) or something for private keys?  
   **LivePeer questions**  
     * What livepeer / ipfs / etc logs needs to be rotated?  
     * What ports should be open? Open to the world?  
