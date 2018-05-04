@@ -17,8 +17,8 @@ aws --profile notation ec2 run-instances \
 **Questions**  
   **Ops TODO**  
   * Set up a public elastic ip   
-  * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and elsewhere    
-  * Make sure timesync is active, ntpd or whatever it is now  
+  * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and [see my own notes](https://gist.github.com/alexlines/dc870ce77cbd754ee6aca67898cafa10)      
+  * Make sure timesync is active, ntpd or whatever it is now. It's [timedatectl and it seems fine out of the box](https://help.ubuntu.com/lts/serverguide/NTP.html). Sounds like chrony is a bit more sophisticated but maybe not necessary unless you want to run local time source?  
   * Process supervisor to keep livepeer running (or restart periodically) - systemd, etc.    
   * Maybe just use ELB's for health checks (not sure about classic ELB vs ALB yet)  
   * DNS name?  
