@@ -42,6 +42,7 @@ aws --profile notation ec2 run-instances \
     * Is there anything to backup?  
     * Guidelines on setting up basic monitoring / alerting  
     * Custom nagios or cloudwatch plugin (possible?) to do health check requests (maybe ELB?) and maybe check basic stats  
+      * Go and systemd both support watchdog http://0pointer.de/blog/projects/watchdog.html  
     * Is there an admin interface available via network - http, etc? Or do you need to build an http request -> livepeer_cli  
     * Securing your node and access to private ETH key  
     * Unclear from docs: need to run a local geth or not? https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143  
