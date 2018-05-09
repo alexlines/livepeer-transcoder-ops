@@ -34,6 +34,7 @@ aws --profile notation ec2 run-instances \
     * Seems like it can send server metrics to http://viz.livepeer.org:8081/metrics ? see [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go) interesting that it can end metrics by default, wonder if that can be redirected and to what kind of server. you can also specify the monitor host to send to  
     * Maybe to the monitor server here? https://github.com/livepeer/go-livepeer/blob/master/monitor/monitor.go  
     * Looks like there's a separate monitor server project https://github.com/livepeer/streamingviz  ... although it hasn't been touched in a year  
+    * Or publish them to CloudWatch? https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html  
     * livepeer_cli params: --rtmp value local rtmp port (default: "1935")  
     * Testnet vs mainnet  
     * Some of these could go into FAQ  
