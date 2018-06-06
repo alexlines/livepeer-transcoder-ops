@@ -30,7 +30,8 @@ aws --profile notation ec2 run-instances \
   * What livepeer / ipfs / etc logs needs to be rotated?   
   * What about using [vault](https://www.hashicorp.com/blog/using-vault-to-build-an-ethereum-wallet) or something for private keys?  
   **LivePeer questions**  
-    * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with  
+    * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
+    * Sane recommended -gasLimit to start with?  
     * Setting up an automatic call to `reward()` once per round. It looks like it calls it automatically at the beginning of every round, but it can fail - if connection to Ethereum node isn't good, if gas prices are high, etc. If it doesn't get called, the newly minted LPT are lost, so it's v important to check.  
       * Can it be called via the http interface?  
       * Is it ok to call it more than once per round?  
