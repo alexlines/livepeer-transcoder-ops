@@ -29,6 +29,7 @@ aws --profile notation ec2 run-instances \
   * What livepeer / ipfs / etc logs needs to be rotated?   
   * What about using [vault](https://www.hashicorp.com/blog/using-vault-to-build-an-ethereum-wallet) or something for private keys?  
   **LivePeer questions**  
+    * Setting up an automatic daily call to reward()  
     * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg?  
     * What livepeer / ipfs / etc logs needs to be rotated?  
     * What ports should be open? Open to the world?  
