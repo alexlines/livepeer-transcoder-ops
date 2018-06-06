@@ -16,6 +16,7 @@ aws --profile notation ec2 run-instances \
 
 **Questions**  
   **Ops TODO**  
+  * Oh, so livepeerjs is the main official API (via RPC)? Kindof missed that https://github.com/livepeer/livepeerjs/tree/master/packages/sdk ... oh, so it's for interacting with LP smart contracts, sot it doesn't expose reward(), but maybe could use to monitor whether transcoder x has successfully called reward() this round? I wonder if you could also just call it via mycrypto? doesn't look like reward is exposed via the ABI that doug sent us. Can definitely use it to get info about a specific transcoder with `getTranscoder('0xf00...')` can also use it to set transcoder parameters, which is useful, but strange you can't call reward?     
   * Set up a public elastic ip   
     * https://docs.aws.amazon.com/cli/latest/reference/ec2/run-instances.html  
   * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and [see my own notes](https://gist.github.com/alexlines/dc870ce77cbd754ee6aca67898cafa10)      
@@ -30,7 +31,9 @@ aws --profile notation ec2 run-instances \
   * What about using [vault](https://www.hashicorp.com/blog/using-vault-to-build-an-ethereum-wallet) or something for private keys?  
   **LivePeer questions**  
     * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with  
-    * Setting up an automatic call to `reward()` once per round  
+    * Setting up an automatic call to `reward()` once per round. It looks like it calls it automatically at the beginning of every round, but it can fail - if connection to Ethereum node isn't good, if gas prices are high, etc. If it doesn't get called, the newly minted LPT are lost, so it's v important to check.  
+      * Can it be called via the http interface?  
+      * Is it ok to call it more than once per round?  
     * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg?  
     * What livepeer / ipfs / etc logs needs to be rotated?  
     * What ports should be open? Open to the world?  
