@@ -60,12 +60,14 @@ aws --profile notation ec2 run-instances \
     * Need a full copy of ETH blockchain?  
     * Unclear from docs: needs ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
     * If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network. hmm how to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url")  (from livepeer.go)    
+      * You can specify a local geth node on the command line via `-ethDatadir` flag when starting the node. The directory specified should contain the ipc file for the Geth node, from https://github.com/livepeer/wiki/wiki/Livepeer-Node  
     * What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
     * How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?  
 
 
 **Becoming an active transcoder on mainnet**  
 * Fund your node with ETH and LTP and bond to yourself  
+* Specifying the Ethereum account - Eth Account Each Livepeer node should have an Ethereum account. Use -ethAccountAddr to specify the account address. You should make sure the keys to the account is in the keystore directory of ethDatadir you passed in.  
 
 
 **Grab LivePeer binaries**  
