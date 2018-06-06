@@ -29,7 +29,8 @@ aws --profile notation ec2 run-instances \
   * What livepeer / ipfs / etc logs needs to be rotated?   
   * What about using [vault](https://www.hashicorp.com/blog/using-vault-to-build-an-ethereum-wallet) or something for private keys?  
   **LivePeer questions**  
-    * Setting up an automatic daily call to reward()  
+    * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with  
+    * Setting up an automatic call to `reward()` once per round  
     * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg?  
     * What livepeer / ipfs / etc logs needs to be rotated?  
     * What ports should be open? Open to the world?  
@@ -59,6 +60,9 @@ aws --profile notation ec2 run-instances \
     * What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
     * How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?  
 
+
+**Becoming an active transcoder on mainnet**  
+* Fund your node with ETH and LTP and bond to yourself  
 
 
 **Grab LivePeer binaries**  
