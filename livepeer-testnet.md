@@ -16,19 +16,19 @@ aws --profile notation ec2 run-instances \
 
 **Questions**  
   **Ops TODO**  
-  * Oh, so livepeerjs is the main official API (via RPC)? Kindof missed that https://github.com/livepeer/livepeerjs/tree/master/packages/sdk ... oh, so it's for interacting with LP smart contracts, sot it doesn't expose reward(), but maybe could use to monitor whether transcoder x has successfully called reward() this round? I wonder if you could also just call it via mycrypto? doesn't look like reward is exposed via the ABI that doug sent us. Can definitely use it to get info about a specific transcoder with `getTranscoder('0xf00...')` can also use it to set transcoder parameters, which is useful, but strange you can't call reward?     
-  * Set up a public elastic ip   
-    * https://docs.aws.amazon.com/cli/latest/reference/ec2/run-instances.html  
-  * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and [see my own notes](https://gist.github.com/alexlines/dc870ce77cbd754ee6aca67898cafa10)      
+  * Set up a [public elastic ip](https://docs.aws.amazon.com/cli/latest/reference/ec2/run-instances.html) and document and operationalize  
+  * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and [see my own notes](https://gist.github.com/alexlines/dc870ce77cbd754ee6aca67898cafa10) and document and operationalize        
+    * Process supervisor to keep livepeer running (or restart periodically) - systemd, etc.    
   * Make sure timesync is active, ntpd or whatever it is now. It's [timedatectl and it seems fine out of the box](https://help.ubuntu.com/lts/serverguide/NTP.html). Sounds like chrony is a bit more sophisticated but maybe not necessary unless you want to run local time source?  
-  * Process supervisor to keep livepeer running (or restart periodically) - systemd, etc.    
+  * What livepeer / ipfs / etc logs needs to be rotated?   
+  * Oh, so livepeerjs is the main official API (via RPC)? Kindof missed that https://github.com/livepeer/livepeerjs/tree/master/packages/sdk ... oh, so it's for interacting with LP smart contracts, sot it doesn't expose reward(), but maybe could use to monitor whether transcoder x has successfully called reward() this round? I wonder if you could also just call it via mycrypto? doesn't look like reward is exposed via the ABI that doug sent us. Can definitely use it to get info about a specific transcoder with `getTranscoder('0xf00...')` can also use it to set transcoder parameters, which is useful, but strange you can't call reward?  
+  * Making sure that `reward()` gets called is a priority  
   * Maybe just use ELB's for health checks (not sure about classic ELB vs ALB yet)  
     * https://www.sumologic.com/aws/elb/aws-elastic-load-balancers-classic-vs-application/  
-    * https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html  
-  * DNS name?  
+    * https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html   
   * [Dockerize?](https://github.com/livepeer/docker-livepeer)  
-  * What livepeer / ipfs / etc logs needs to be rotated?   
   * What about using [vault](https://www.hashicorp.com/blog/using-vault-to-build-an-ethereum-wallet) or something for private keys?  
+  * DNS name? 
   **LivePeer questions**  
     * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
     * Sane recommended -gasLimit to start with?  
@@ -57,14 +57,17 @@ aws --profile notation ec2 run-instances \
     * Guidelines on setting up basic monitoring / alerting  
     * Custom nagios or cloudwatch plugin (possible?) to do health check requests (maybe ELB?) and maybe check basic stats  
       * Go and systemd both support watchdog http://0pointer.de/blog/projects/watchdog.html  
-    * Is there an admin interface available via network - http, etc? Or do you need to build an http request -> livepeer_cli  
+    * Any admin interface available via network - http, etc? Or do you need to build an http request -> livepeer_cli  
     * Securing your node and access to private ETH key  
-    * Unclear from docs: need to run a local geth or not? https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143  
-    * Need a full copy of ETH blockchain?  
-    * Unclear from docs: needs ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
-    * If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network. hmm how to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url")  (from livepeer.go)    
-      * You can specify a local geth node on the command line via `-ethDatadir` flag when starting the node. The directory specified should contain the ipc file for the Geth node, from https://github.com/livepeer/wiki/wiki/Livepeer-Node  
+    * Running a local node would definitely be helpful
+      * Although it's not 100% clear in the docs - offical docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. I know that it's not required but I think it's clearly beneficial, eg:  
+      * "If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network."  
+      * How to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url") from [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go#L83)  
+      * You can specify a local geth node on the command line via `-ethDatadir` flag when starting the node. The directory specified should contain the ipc file for the Geth node, from https://github.com/livepeer/wiki/wiki/Livepeer-Node   
       * See also this post for running a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
+      * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
+      * My preference is to run it on a dedicated local node (not the transcoder)  
+    * Unclear from docs: needs ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
     * What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
     * How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?  
 
