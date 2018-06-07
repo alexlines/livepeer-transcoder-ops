@@ -5,7 +5,7 @@
   * For GPU capabilities, consider [P2 GPU instances](https://aws.amazon.com/ec2/instance-types/p2/) (crazy expensive) and [Elastic GPUs](https://aws.amazon.com/ec2/elastic-gpus/details/) which can be attached to certain instance types.   
   * This will spin up a [c4.2xlarge](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly) instance in us-east with 15GB RAM, 8vCPUs, "High" network perf, [EBS optimized](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html), and a 32GB [gp2 standard SSD](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_gp2). Cost ~$300/month (on-demand).  
   * I'm using the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with [this configuration](https://gist.github.com/alexlines/f8a83c4705755b74e7592e686a4832e9)  
-  * **Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You need to [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have, so adjust accordingly.  
+  * **Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You need to [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have (which just allow ssh from certain sources), so adjust accordingly.  
 
 
 ```
@@ -70,7 +70,7 @@ aws --profile notation ec2 run-instances \
 
 
 **Becoming an active transcoder on mainnet**  
-* Fund your node with ETH and LTP and bond to yourself  
+* Fund your node with ETH and LPT and bond to yourself  
 * Specifying the Ethereum account - Eth Account Each Livepeer node should have an Ethereum account. Use -ethAccountAddr to specify the account address. You should make sure the keys to the account is in the keystore directory of ethDatadir you passed in.  
 
 
