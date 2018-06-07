@@ -70,6 +70,7 @@ aws --profile notation ec2 run-instances \
 
 
 **Becoming an active transcoder on mainnet**  
+* **spin up a fresh node but try to put an old account in place before starting the livepeer binary**  
 * Fund your node with ETH and LPT and bond to yourself  
 * Specifying the Ethereum account - Eth Account Each Livepeer node should have an Ethereum account. Use -ethAccountAddr to specify the account address. You should make sure the keys to the account is in the keystore directory of ethDatadir you passed in.  
 
