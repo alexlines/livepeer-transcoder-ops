@@ -39,6 +39,7 @@ aws --profile notation ec2 run-instances \
 * Setting up an automatic call to `reward()` once per round. It looks like it calls it automatically at the beginning of every round, but it can fail - if connection to Ethereum node isn't good, if gas prices are high, etc. If it doesn't get called, the newly minted LPT are lost, so it's v important to check.  
   * Can it be called via the http interface?  
   * Is it ok to call it more than once per round?  
+* Worth setting up a dedicated ipfs node in local network?  
 * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? 
 * Best way to backup the account / credentials tied to the node?  
 * What livepeer / ipfs / etc logs needs to be rotated?  
