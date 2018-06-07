@@ -14,8 +14,7 @@ aws --profile notation ec2 run-instances \
 ```  
 
 
-**Questions**  
-  **Ops TODO**  
+**Ops TODO**  
   * Set up a [public elastic ip](https://docs.aws.amazon.com/cli/latest/reference/ec2/run-instances.html) and document and operationalize  
   * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and [see my own notes](https://gist.github.com/alexlines/dc870ce77cbd754ee6aca67898cafa10) and document and operationalize        
     * Process supervisor to keep livepeer running (or restart periodically) - systemd, etc.    
@@ -28,48 +27,50 @@ aws --profile notation ec2 run-instances \
     * https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html   
   * [Dockerize?](https://github.com/livepeer/docker-livepeer)  
   * What about using [vault](https://www.hashicorp.com/blog/using-vault-to-build-an-ethereum-wallet) or something for private keys?  
-  * DNS name? 
-  **LivePeer questions**  
-    * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
-    * Sane recommended -gasLimit to start with?  
-    * Setting up an automatic call to `reward()` once per round. It looks like it calls it automatically at the beginning of every round, but it can fail - if connection to Ethereum node isn't good, if gas prices are high, etc. If it doesn't get called, the newly minted LPT are lost, so it's v important to check.  
-      * Can it be called via the http interface?  
-      * Is it ok to call it more than once per round?  
-    * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? 
-    * Best way to backup the account / credentials tied to the node?  
-    * What livepeer / ipfs / etc logs needs to be rotated?  
-    * Nice to have: Make sure `initializeRound()` has been called - cannot call `reward()` until it has  
-    * What ports should be open? Open to the world?  
-      * Video Ingest Endpoint - rtmp://localhost:1935  
-      * livepeer_cli params: --http value local http port (default: "8935")  - this is a control port via http, I would make sure this is protected, can set configs here, bond(), etc.  
-      * yep, this is the port to poll to track status and info. Available commands are documented in [webserver.go](https://github.com/livepeer/go-livepeer/blob/ec288f43b60fbf3bd61f81b636538b5b004aaa86/server/webserver.go)  
-    * Seems like it can send server metrics to http://viz.livepeer.org:8081/metrics ? see [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go) interesting that it can end metrics by default, wonder if that can be redirected and to what kind of server. you can also specify the monitor host to send to  
-    * Maybe to the monitor server here? https://github.com/livepeer/go-livepeer/blob/master/monitor/monitor.go  
-    * Looks like there's a separate monitor server project https://github.com/livepeer/streamingviz  ... although it hasn't been touched in a year  
-    * Or publish them to CloudWatch? https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html  
-      * https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-cw.html  
-    * livepeer_cli params: --rtmp value local rtmp port (default: "1935")  
-    * Testnet vs mainnet  
-    * Some of these could go into FAQ  
-    * What's the .eth name service to translate from name -> eth address?  
-    * How to import existing ETH account / keys? Maybe a [current bug](https://github.com/livepeer/go-livepeer/issues/304)  
-    * Is there anything to backup?  
-    * Guidelines on setting up basic monitoring / alerting  
-    * Custom nagios or cloudwatch plugin (possible?) to do health check requests (maybe ELB?) and maybe check basic stats  
-      * Go and systemd both support watchdog http://0pointer.de/blog/projects/watchdog.html  
-    * Any admin interface available via network - http, etc? Or do you need to build an http request -> livepeer_cli  
-    * Securing your node and access to private ETH key  
-    * Running a local node would definitely be helpful
-      * Although it's not 100% clear in the docs - offical docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. I know that it's not required but I think it's clearly beneficial, eg:  
-      * "If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network."  
-      * How to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url") from [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go#L83)  
-      * You can specify a local geth node on the command line via `-ethDatadir` flag when starting the node. The directory specified should contain the ipc file for the Geth node, from https://github.com/livepeer/wiki/wiki/Livepeer-Node   
-      * See also this post for running a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
-      * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
-      * My preference is to run it on a dedicated local node (not the transcoder)  
-    * Unclear from docs: needs ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
-    * What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
-    * How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?  
+  * DNS name?  
+
+
+**LivePeer questions**  
+* The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
+* Sane recommended -gasLimit to start with?  
+* Setting up an automatic call to `reward()` once per round. It looks like it calls it automatically at the beginning of every round, but it can fail - if connection to Ethereum node isn't good, if gas prices are high, etc. If it doesn't get called, the newly minted LPT are lost, so it's v important to check.  
+  * Can it be called via the http interface?  
+  * Is it ok to call it more than once per round?  
+* Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? 
+* Best way to backup the account / credentials tied to the node?  
+* What livepeer / ipfs / etc logs needs to be rotated?  
+* Nice to have: Make sure `initializeRound()` has been called - cannot call `reward()` until it has  
+* What ports should be open? Open to the world?  
+  * Video Ingest Endpoint - rtmp://localhost:1935  
+  * livepeer_cli params: --http value local http port (default: "8935")  - this is a control port via http, I would make sure this is protected, can set configs here, bond(), etc.  
+* yep, this is the port to poll to track status and info. Available commands are documented in [webserver.go](https://github.com/livepeer/go-livepeer/blob/ec288f43b60fbf3bd61f81b636538b5b004aaa86/server/webserver.go)  
+* Seems like it can send server metrics to http://viz.livepeer.org:8081/metrics ? see [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go) interesting that it can end metrics by default, wonder if that can be redirected and to what kind of server. you can also specify the monitor host to send to  
+  * Maybe to the monitor server here? https://github.com/livepeer/go-livepeer/blob/master/monitor/monitor.go  
+  * Looks like there's a separate monitor server project https://github.com/livepeer/streamingviz  ... although it hasn't been touched in a year  
+  * Or publish them to CloudWatch? https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html  
+    * https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-cw.html  
+* livepeer_cli params: --rtmp value local rtmp port (default: "1935")  
+  * Testnet vs mainnet  
+* Some of these could go into FAQ  
+* What's the .eth name service to translate from name -> eth address?  
+* How to import existing ETH account / keys? Maybe a [current bug](https://github.com/livepeer/go-livepeer/issues/304)  
+* Is there anything to backup?  
+* Guidelines on setting up basic monitoring / alerting  
+* Custom nagios or cloudwatch plugin (possible?) to do health check requests (maybe ELB?) and maybe check basic stats  
+  * Go and systemd both support watchdog http://0pointer.de/blog/projects/watchdog.html  
+  * Any admin interface available via network - http, etc? Or do you need to build an http request -> livepeer_cli  
+* Securing your node and access to private ETH key  
+* Running a local geth node would definitely be helpful
+  * Although it's not 100% clear in the docs - offical docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. I know that it's not required but I think it's clearly beneficial, eg:  
+  * "If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network."  
+  * How to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url") from [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go#L83)  
+  * You can specify a local geth node on the command line via `-ethDatadir` flag when starting the node. The directory specified should contain the ipc file for the Geth node, from https://github.com/livepeer/wiki/wiki/Livepeer-Node   
+  * See this post for running a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
+  * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
+  * My preference is to run it on a dedicated local node (not the transcoder)  
+* Unclear from docs: needs ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
+* What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
+* How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?  
 
 
 **Becoming an active transcoder on mainnet**  
