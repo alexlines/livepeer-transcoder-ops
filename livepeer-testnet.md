@@ -37,6 +37,7 @@ aws --profile notation ec2 run-instances \
       * Is it ok to call it more than once per round?  
     * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg?  
     * What livepeer / ipfs / etc logs needs to be rotated?  
+    * Nice to have: Make sure `initializeRound()` has been called - cannot call `reward()` until it has  
     * What ports should be open? Open to the world?  
       * Video Ingest Endpoint - rtmp://localhost:1935  
       * livepeer_cli params: --http value local http port (default: "8935")  - this is a control port via http, I would make sure this is protected, can set configs here, bond(), etc.  
