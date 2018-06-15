@@ -35,6 +35,9 @@ aws --profile notation ec2 run-instances \
   * What about using [vault](https://www.hashicorp.com/blog/using-vault-to-build-an-ethereum-wallet) or something for private keys?  
   * DNS name?  
   * ENS name?  
+  * Maybe would be better to use [AWS Launch Templates](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html), maybe will revisit  
+  * Should also create custom IAM users and permissions ...  
+  * Documentation could include creation of custom security groups, ssh key, and maybe gateway host  
 
 
 **LivePeer questions**  
