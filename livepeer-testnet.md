@@ -62,7 +62,7 @@ aws --profile notation ec2 run-instances \
 * Some of these could go into FAQ  
 * What's the .eth name service to translate from name -> eth address?  
 * How to import existing ETH account / keys? Maybe a [current bug](https://github.com/livepeer/go-livepeer/issues/304)  
-* Is there anything to backup?  
+* Is there anything to backup? - if everything is on an attached EBS vol, just snapshot it I guess  
 * Guidelines on setting up basic monitoring / alerting  
 * Custom nagios or cloudwatch plugin (possible?) to do health check requests (maybe ELB?) and maybe check basic stats  
   * Go and systemd both support watchdog http://0pointer.de/blog/projects/watchdog.html  
