@@ -18,6 +18,7 @@ aws --profile notation ec2 run-instances \
 
 **Ops TODO**  
   * Dedicated EBS Volume  
+  * If boot vol is also EBS then can relaunch different instance types on same boot vol, what AWS calls [instance resizing](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-resize.html)  
   * Set up a [public elastic ip](https://docs.aws.amazon.com/cli/latest/reference/ec2/run-instances.html) and document and operationalize  
   * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and [see my own notes](https://gist.github.com/alexlines/dc870ce77cbd754ee6aca67898cafa10) and document and operationalize        
     * Process supervisor to keep livepeer running (or restart periodically) - systemd, etc.    
