@@ -56,6 +56,7 @@ aws --profile notation ec2 run-instances \
   * Looks like there's a separate monitor server project https://github.com/livepeer/streamingviz  ... although it hasn't been touched in a year  
   * Or publish them to CloudWatch? https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html  
     * https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-cw.html  
+    * Monitor and document that reward() is called daily, publish to public cloudwatch dashboard? How to monitor?  
 * livepeer_cli params: --rtmp value local rtmp port (default: "1935")  
   * Testnet vs mainnet  
 * Some of these could go into FAQ  
