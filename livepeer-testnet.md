@@ -33,6 +33,7 @@ aws --profile notation ec2 run-instances \
   * [Dockerize?](https://github.com/livepeer/docker-livepeer)  
   * What about using [vault](https://www.hashicorp.com/blog/using-vault-to-build-an-ethereum-wallet) or something for private keys?  
   * DNS name?  
+  * ENS name?  
 
 
 **LivePeer questions**  
