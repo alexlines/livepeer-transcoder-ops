@@ -185,3 +185,26 @@ UTC--2018-05-02T19-12-28.040032202Z--0c47d7852c14001b78c157fd6fc8938488cd45f0
   * `curl http://localhost:8935/getAvailableTranscodingOptions`  
   * Can also set broadcast config by POST'ing params to http://localhost:8935/setBroadcastConfig  
   
+
+**System Ops**  
+* Create and attach the EBS Vol - adjust availability zone to match instance az  
+* EBS Optimized may not be critical, we don't know yet, but will help conserve network IO for receiving/sending video  
+```
+aws --profile notation ec2 create-volume --size 100 --region us-east-1 --availability-zone us-east-1a --volume-type gp2  
+aws --profile notation ec2 attach-volume --device /dev/sdh --instance-id <instance-id> --volume-id <volume-id>  
+# run locally on the box:  
+sudo mkfs.ext4 /dev/xvdh  
+sudo mkdir /d1  
+sudo mount /dev/xvdh /d1  
+sudo mkdir /d1/livepeer-data  
+sudo chown -R ubuntu:ubuntu /d1/livepeer-data  
+echo "UUID=<volume UUID> /d1 ext4 defaults 0 2" | sudo tee -a /etc/fstab  
+```  
+
+
+* Filesystem operations  
+```
+sudo mkdir -p /usr/local/production
+sudo mv -i livepeer_linux /usr/local/production/livepeer
+sudo chown -R ubuntu:ubuntu /usr/local/production/livepeer
+```
