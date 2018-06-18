@@ -208,3 +208,9 @@ sudo mkdir -p /usr/local/production
 sudo mv -i livepeer_linux /usr/local/production/livepeer
 sudo chown -R ubuntu:ubuntu /usr/local/production/livepeer
 ```
+
+* Allocate elastic ip  
+```
+aws --profile notation ec2 allocate-address  
+aws --profile notation ec2 associate-address --instance-id <instance id> --public-ip <ip address>  
+```
