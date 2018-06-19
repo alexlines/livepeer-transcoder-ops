@@ -83,6 +83,11 @@ aws --profile notation ec2 run-instances \
 * Unclear from docs: needs ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
 * What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
 * How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?  
+* Automating startup of `livepeer` by automatically supplying a password for the ethereum?  
+  * I just supplied a blank password the first time and then it doesn't ask for password on startup in the future  
+  * What are implications of no password? For backing up files, for security of account in general, etc?  
+  * Could just do it via command-line, but don't really want it to be visible to 'ps'  
+  * Would prefer at least a config file if nothing else ...  
 
 
 **Becoming an active transcoder on mainnet**  
