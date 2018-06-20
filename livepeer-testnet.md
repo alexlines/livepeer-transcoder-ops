@@ -88,6 +88,7 @@ aws --profile notation ec2 run-instances \
   * What are implications of no password? For backing up files, for security of account in general, etc?  
   * Could just do it via command-line, but don't really want it to be visible to 'ps'  
   * Would prefer at least a config file if nothing else ...  
+* Specifying `-log_dir` on the command line only moved where the ipfs log file got written, `livepeer` still wrote its log to stderr.
 
 
 **Becoming an active transcoder on mainnet**  
@@ -218,4 +219,27 @@ sudo chown -R ubuntu:ubuntu /usr/local/production/livepeer
 ```
 aws --profile notation ec2 allocate-address  
 aws --profile notation ec2 associate-address --instance-id <instance id> --public-ip <ip address>  
-```
+```  
+
+* Raise open filehandle limits  
+```  
+echo "ubuntu soft nofile 50000" | sudo tee -a /etc/security/limits.conf
+echo "ubuntu hard nofile 50000" | sudo tee -a /etc/security/limits.conf
+```  
+
+* install systemd script  
+```  
+sudo cp <path to>/livepeer-transcoder.service /etc/systemd/system/
+sudo systemctl enable livepeer-transcoder    [or reenable]
+sudo systemctl start livepeer-transcoder
+tail /var/log/syslog
+# OR
+kill $(pgrep livepeer)
+# OR
+sudo systemctl restart livepeer
+# watch the logs
+sudo journalctl -u livepeer-transcoder.service -f
+sudo journalctl -u livepeer-transcoder.service -o cat -f
+```  
+
+This is all very specific to Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.  
