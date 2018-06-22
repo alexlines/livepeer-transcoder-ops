@@ -88,7 +88,8 @@ aws --profile notation ec2 run-instances \
   * What are implications of no password? For backing up files, for security of account in general, etc?  
   * Could just do it via command-line, but don't really want it to be visible to 'ps'  
   * Would prefer at least a config file if nothing else ...  
-* Specifying `-log_dir` on the command line only moved where the ipfs log file got written, `livepeer` still wrote its log to stderr.
+* Specifying `-log_dir` on the command line only moved where the ipfs log file got written, `livepeer` still wrote its log to stderr.  
+* How to know if you've been slashed?  
 
 
 **Becoming an active transcoder on mainnet**  
