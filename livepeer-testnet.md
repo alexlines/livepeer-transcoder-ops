@@ -240,6 +240,7 @@ sudo systemctl restart livepeer
 # watch the logs
 sudo journalctl -u livepeer-transcoder.service -f
 sudo journalctl -u livepeer-transcoder.service -o cat -f
+systemctl status livepeer-transcoder.service
 ```  
 
 This is all very specific to Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.  
