@@ -253,7 +253,9 @@ screen
 geth --datadir "/d2/geth-data/.ethereum" --cache 512 --maxpeers 25 --syncmode light --rpc --rpcapi db,eth,net,web3 --ws --wsorigins "*"
 ```  
 
-Wait a few minutes and make sure geth is grabbing latest blocks. Sometimes you have to wait 15 minutes, kill it, and restart it before it begins syncing them.       
+Wait a few minutes and make sure geth is grabbing latest blocks. Sometimes you have to wait 15 minutes, kill it, and restart it before it begins syncing them.  
+
+* If you have existing data files / keys, copy them into place now (.lpData, etc)  
 
 * install systemd script  
 ```  
