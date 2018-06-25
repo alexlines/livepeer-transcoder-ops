@@ -196,16 +196,29 @@ UTC--2018-05-02T19-12-28.040032202Z--0c47d7852c14001b78c157fd6fc8938488cd45f0
   
 
 **System Ops**  
-* Create and attach the EBS Vol - adjust availability zone to match instance az  
-* EBS Optimized may not be critical, we don't know yet, but will help conserve network IO for receiving/sending video  
+* If the EBS volumes weren't created at instance instatiation, create them now. EBS Optimized may not be critical, we don't know yet, but will help conserve network IO for receiving/sending video.  
+* 100GB gp2 disk for LivePeer storage / operations  
+* Adjust availability zone to match instance az  
 ```
 aws --profile notation ec2 create-volume --size 100 --region us-east-1 --availability-zone us-east-1a --volume-type gp2  
+aws --profile notation ec2 attach-volume --device /dev/sdg --instance-id <instance-id> --volume-id <volume-id>  
+# run locally on the box:  
+sudo mkfs.ext4 /dev/xvdg  
+sudo mkdir /d1  
+echo "UUID=<volume UUID> /d1 ext4 defaults 0 2" | sudo tee -a /etc/fstab  
+sudo mount /d1    
+```  
+
+* 500GB gp2 disk for geth  
+* Adjust availability zone to match instance az   
+```
+aws --profile notation ec2 create-volume --size 500 --region us-east-1 --availability-zone us-east-1a --volume-type gp2  
 aws --profile notation ec2 attach-volume --device /dev/sdh --instance-id <instance-id> --volume-id <volume-id>  
 # run locally on the box:  
 sudo mkfs.ext4 /dev/xvdh  
-sudo mkdir /d1  
-sudo mount /dev/xvdh /d1    
-echo "UUID=<volume UUID> /d1 ext4 defaults 0 2" | sudo tee -a /etc/fstab  
+sudo mkdir /d2     
+echo "UUID=<volume UUID> /d2 ext4 defaults 0 2" | sudo tee -a /etc/fstab  
+sudo mount /dev/xvdh /d2   
 ```  
 
 
