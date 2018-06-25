@@ -15,6 +15,11 @@ aws --profile notation ec2 run-instances \
     --cli-input-json file://livepeer-transcoder-ec2-config.json  
 ```  
 
+* Allocate elastic ip  
+```
+aws --profile notation ec2 allocate-address  
+aws --profile notation ec2 associate-address --instance-id <instance id> --public-ip <ip address>  
+```   
 
 **Ops TODO**  
   * Dedicated EBS Volume  
@@ -227,12 +232,6 @@ sudo mount /dev/xvdh /d2
 sudo mkdir -p /d1/livepeer/logs  
 sudo mv -i livepeer_linux /d1/livepeer/bin  
 sudo chown -R ubuntu:ubuntu /d1/livepeer  
-```
-
-* Allocate elastic ip  
-```
-aws --profile notation ec2 allocate-address  
-aws --profile notation ec2 associate-address --instance-id <instance id> --public-ip <ip address>  
 ```  
 
 * Raise open filehandle limits  
@@ -240,6 +239,21 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
 echo "ubuntu soft nofile 50000" | sudo tee -a /etc/security/limits.conf
 echo "ubuntu hard nofile 50000" | sudo tee -a /etc/security/limits.conf
 ```  
+
+* Install geth [more detail here](https://gist.github.com/alexlines/b6332b3d0bf01a20e3c217d54e2a8867)  
+```
+sudo apt-get install -y software-properties-common
+sudo add-apt-repository -y ppa:ethereum/ethereum
+sudo apt-get update
+sudo apt-get install -y ethereum
+sudo mkdir /d2/geth-data
+sudo chown -R ubuntu:ubuntu /d2/geth-data
+cd /d2/geth-data
+screen  
+geth --datadir "/d2/geth-data/.ethereum" --cache 512 --maxpeers 25 --syncmode light --rpc --rpcapi db,eth,net,web3 --ws --wsorigins "*"
+```  
+
+Wait a few minutes and make sure geth is grabbing latest blocks. Sometimes you have to wait 15 minutes, kill it, and restart it before it begins syncing them.       
 
 * install systemd script  
 ```  
