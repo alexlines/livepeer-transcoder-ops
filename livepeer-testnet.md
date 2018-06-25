@@ -104,7 +104,7 @@ aws --profile notation ec2 run-instances \
   * You can build from scratch if you want but why ...
   * Download the latest mainnet-targeted livepeer and livepeer_cli from https://github.com/livepeer/go-livepeer/releases.  
 ```
-curl -s -L https://github.com/livepeer/go-livepeer/releases/download/0.2.3/livepeer_linux.tgz > livepeer_linux.tgz
+curl -s -L https://github.com/livepeer/go-livepeer/releases/download/0.2.4/livepeer_linux.tgz > livepeer_linux.tgz
 gzip -d -c livepeer_linux.tgz | tar xvf -
 cd livepeer_linux/
 ./livepeer
