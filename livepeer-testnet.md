@@ -203,18 +203,16 @@ aws --profile notation ec2 attach-volume --device /dev/sdh --instance-id <instan
 # run locally on the box:  
 sudo mkfs.ext4 /dev/xvdh  
 sudo mkdir /d1  
-sudo mount /dev/xvdh /d1  
-sudo mkdir /d1/livepeer-data  
-sudo chown -R ubuntu:ubuntu /d1/livepeer-data  
+sudo mount /dev/xvdh /d1    
 echo "UUID=<volume UUID> /d1 ext4 defaults 0 2" | sudo tee -a /etc/fstab  
 ```  
 
 
 * Filesystem operations  
 ```
-sudo mkdir -p /usr/local/production
-sudo mv -i livepeer_linux /usr/local/production/livepeer
-sudo chown -R ubuntu:ubuntu /usr/local/production/livepeer
+sudo mkdir -p /d1/livepeer/logs  
+sudo mv -i livepeer_linux /d1/livepeer/bin  
+sudo chown -R ubuntu:ubuntu /d1/livepeer  
 ```
 
 * Allocate elastic ip  
