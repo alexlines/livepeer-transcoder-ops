@@ -12,7 +12,7 @@
 
 ```
 aws --profile notation ec2 run-instances \
-    --cli-input-json file://livepeer-transcoder-ec2-config.json
+    --cli-input-json file://livepeer-transcoder-ec2-config.json  
 ```  
 
 
