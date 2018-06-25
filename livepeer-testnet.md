@@ -246,3 +246,7 @@ systemctl status livepeer-transcoder.service
 ```  
 
 This is all very specific to Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.  
+
+* LivePeer CLI - transcoder  
+* run the ./livepeer binary with --publicIP <elastic ip> because it may not know that ...  
+* Send LPT & ETH to the transcoder's ETH account  
