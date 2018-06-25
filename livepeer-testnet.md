@@ -45,6 +45,7 @@ aws --profile notation ec2 run-instances \
 * Sane recommended -gasLimit to start with? -> sounds like omitting gasPrice flag might be the way to go after 0.2.3, which will rely on the gas oracle instead.  
 * Setting up an automatic call to `reward()` once per round. It looks like it calls it automatically at the beginning of every round, but it can fail - if connection to Ethereum node isn't good, if gas prices are high, etc. If it doesn't get called, the newly minted LPT are lost, so it's v important to check.  
   * Can it be called via the http interface?  
+    * According to the docs https://livepeer.readthedocs.io/en/latest/node.html, the CLI works by communicating with the HTTP interface, and you can open that up by setting the `--httpIP` option at runtime  
   * Is it ok to call it more than once per round?  
 * Worth setting up a dedicated ipfs node in local network?  
 * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? 
