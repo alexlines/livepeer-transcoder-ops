@@ -24,7 +24,7 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
 **Ops TODO**  
   * Automate snapshots  
   * systemd: turn restart rate limiting back on and attach to a notifier https://serverfault.com/questions/694818/get-notification-when-systemd-monitored-service-enters-failed-state  
-  * Dedicated EBS Volume  
+  * Dedicated EBS Volume - should maybe be encrypted if key is stored there ...  
   * If boot vol is also EBS then can relaunch different instance types on same boot vol, what AWS calls [instance resizing](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-resize.html)  
   * Set up a [public elastic ip](https://docs.aws.amazon.com/cli/latest/reference/ec2/run-instances.html) and document and operationalize  
   * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and [see my own notes](https://gist.github.com/alexlines/dc870ce77cbd754ee6aca67898cafa10) and document and operationalize        
