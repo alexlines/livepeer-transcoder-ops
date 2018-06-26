@@ -22,6 +22,8 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
 ```   
 
 **Ops TODO**  
+  * Automate snapshots  
+  * systemd: turn restart rate limiting back on and attach to a notifier https://serverfault.com/questions/694818/get-notification-when-systemd-monitored-service-enters-failed-state  
   * Dedicated EBS Volume  
   * If boot vol is also EBS then can relaunch different instance types on same boot vol, what AWS calls [instance resizing](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-resize.html)  
   * Set up a [public elastic ip](https://docs.aws.amazon.com/cli/latest/reference/ec2/run-instances.html) and document and operationalize  
@@ -86,6 +88,7 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
   * See this post for running a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
   * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
   * My preference is to run it on a dedicated local node (not the transcoder)  
+  * Is it really ok to run geth light client vs fast-sync (or full node)?  
 * Unclear from docs: needs ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
 * What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
   * I guess the identity is just the eth address of the account, so as long as you migrate that to a new machine it should be fine  
@@ -97,6 +100,7 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
   * Would prefer at least a config file if nothing else ...  
 * Specifying `-log_dir` on the command line only moved where the ipfs log file got written, `livepeer` still wrote its log to stderr.  
 * How to know if you've been slashed?  
+* Gas: Doug says 10Gwei is a safe price - does that mean you’ll pay 10Gwei every time?? or that’s just max price  
 
 
 **Becoming an active transcoder on mainnet**  
@@ -240,7 +244,10 @@ echo "ubuntu soft nofile 50000" | sudo tee -a /etc/security/limits.conf
 echo "ubuntu hard nofile 50000" | sudo tee -a /etc/security/limits.conf
 ```  
 
-* Install geth [more detail here](https://gist.github.com/alexlines/b6332b3d0bf01a20e3c217d54e2a8867)  
+* Install geth [more detail here](https://gist.github.com/alexlines/b6332b3d0bf01a20e3c217d54e2a8867)   
+geth systemd stuff  
+geth config file  
+periodically kill it ...  
 ```
 sudo apt-get install -y software-properties-common
 sudo add-apt-repository -y ppa:ethereum/ethereum
@@ -249,8 +256,23 @@ sudo apt-get install -y ethereum
 sudo mkdir /d2/geth-data
 sudo chown -R ubuntu:ubuntu /d2/geth-data
 cd /d2/geth-data
+# manually:
 screen  
-geth --datadir "/d2/geth-data/.ethereum" --cache 512 --maxpeers 25 --syncmode light --rpc --rpcapi db,eth,net,web3 --ws --wsorigins "*"
+geth --datadir "/d2/geth-data/.ethereum" --cache 512 --maxpeers 25 --syncmode light --rpc --rpcapi db,eth,net,web3 --ws --wsorigins "*"  
+
+# via systemd
+sudo cp <path to>/geth.service /etc/systemd/system/
+sudo systemctl enable geth    [or reenable]
+sudo systemctl start geth
+tail /var/log/syslog
+# OR
+kill $(pgrep geth)
+# OR
+sudo systemctl restart geth
+# watch the logs
+sudo journalctl -u geth.service -f
+sudo journalctl -u geth.service -o cat -f
+systemctl status geth.service
 ```  
 
 Wait a few minutes and make sure geth is grabbing latest blocks. Sometimes you have to wait 15 minutes, kill it, and restart it before it begins syncing them.  
