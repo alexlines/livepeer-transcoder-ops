@@ -57,7 +57,8 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
 * Worth setting up a dedicated ipfs node in local network?  
 * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg?  
   * GPU transcoding is not currently supported, according to Doug, "Currently we support deterministic CPU transcoding, but we're working on what you read in the above proposal to enable GPU transcoding in a way that will not disrupt GPU mining operations"  
-  * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184) but I thought there was another one ...   
+  * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184)  
+  * More GPU thoughts in [Transcoder Design #51](https://github.com/livepeer/lpms/issues/51) issue and adding GPU Acceleration to transcoding is still an [open issue](https://github.com/livepeer/lpms/issues/33).  
 * Best way to backup the account / credentials tied to the node?  
 * What livepeer / ipfs / etc logs needs to be rotated?  
 * Nice to have: Make sure `initializeRound()` has been called - cannot call `reward()` until it has  
