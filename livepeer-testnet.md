@@ -55,7 +55,9 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
     * According to the docs https://livepeer.readthedocs.io/en/latest/node.html, the CLI works by communicating with the HTTP interface, and you can open that up by setting the `--httpIP` option at runtime  
   * Is it ok to call it more than once per round?  
 * Worth setting up a dedicated ipfs node in local network?  
-* Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? 
+* Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg?  
+  * GPU transcoding is not currently supported, according to Doug, "Currently we support deterministic CPU transcoding, but we're working on what you read in the above proposal to enable GPU transcoding in a way that will not disrupt GPU mining operations"  
+  * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184) but I thought there was another one ...   
 * Best way to backup the account / credentials tied to the node?  
 * What livepeer / ipfs / etc logs needs to be rotated?  
 * Nice to have: Make sure `initializeRound()` has been called - cannot call `reward()` until it has  
