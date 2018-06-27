@@ -72,6 +72,33 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
   * Or publish them to CloudWatch? https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html  
     * https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-cw.html  
     * Monitor and document that reward() is called daily, publish to public cloudwatch dashboard? How to monitor?  
+    * Can check if reward() was called by watching the latest transactions from the transcoder's account, either via the [etherscan API](https://etherscan.io/apis)
+    * Can do the same thing by querying the local geth node -
+      * Via geth console - but need to do this via API, maybe web3
+      This tx was a call to reward()
+      ```
+      geth attach /d2/geth-data/.ethereum/geth.ipc
+      > eth.getTransaction("0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f")
+      > eth.getTransactionReceipt("0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f")
+      ```
+      * or via geth's [web3 javascript api](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgettransaction) for communicating with an ethereum node from inside a javascript application  
+      * Or use the [JSON-RPC api](https://github.com/ethereum/wiki/wiki/JSON-RPC) directly. These docs include [curl examples](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactionbyhash):
+      ```
+      curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionByHash","params":["0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f"],"id":1}' http://localhost:8545  
+      ```
+      but there's not an easy way to list recent transactions for an account or contract ... looks like filters/logs are the way to do this?  
+      * But still need to decode the `input` param and translate it to the function name. According to the [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI), "the first four bytes of the call data for a function call specifies the function to be called. It is the first (left, high-order in big-endian) four bytes of the Keccak (SHA-3) hash of the signature of the function."   
+        * GitHub: [ConsenSys ABI decoder](https://github.com/ConsenSys/abi-decoder) project    
+        * GitHub: [Ethereum tx input data decoder project](https://github.com/miguelmota/ethereum-input-data-decoder)  
+        * GitHub: [Decoder and encoder for the Ethereum ABI](https://github.com/ethereumjs/ethereumjs-abi)  
+        * GitHub: [python eth abi](https://github.com/ethereum/eth-abi) project with input decoding [example on stackexchange](https://ethereum.stackexchange.com/questions/6297/python-eth-getfilterchanges-data-how-to-decode)  
+      * The LivePeer process also makes an http api available, so it's possible to ask it for transcoder stats:  
+      ```
+      $ curl http://127.0.0.1:8935/transcoderInfo
+      {"Address":"0x50d69f8253685999b4c74a67ccb3d240e2a56ed6","LastRewardRound":1018,"RewardCut":30000,"FeeShare":300000,"PricePerSegment":150000000000,"PendingRewardCut":30000,"PendingFeeShare":300000,"PendingPricePerSegment":150000000000,"DelegatedStake":6454553077282307328907,"Active":true,"Status":"Registered"}
+      ```  
+      such as `LastRewardRound` - the last round reward was called in. See [go-livepeer/server/webserver.go](https://github.com/livepeer/go-livepeer/blob/4589a1364fa9d29e9d196d259f1f235116d45953/server/webserver.go) for other functions you can call.  
+      * Instead of decoding the contract input data could just string match since we know that the reward hex is "input":"0x228cb733", but it's a dirty hack.  
 * livepeer_cli params: --rtmp value local rtmp port (default: "1935")  
   * Testnet vs mainnet  
 * Some of these could go into FAQ  
