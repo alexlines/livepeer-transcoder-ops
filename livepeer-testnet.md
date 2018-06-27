@@ -101,6 +101,7 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
 * Specifying `-log_dir` on the command line only moved where the ipfs log file got written, `livepeer` still wrote its log to stderr.  
 * How to know if you've been slashed?  
 * Gas: Doug says 10Gwei is a safe price - does that mean you’ll pay 10Gwei every time?? or that’s just max price  
+* Capacity planning - how to estimate transcoding rate (how long to transcode each second of output video) based on machine resources?  
 
 
 **Becoming an active transcoder on mainnet**  
