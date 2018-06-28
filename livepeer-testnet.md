@@ -8,6 +8,7 @@
     * Should probably attach a dedicated EBS volume for livepeer anyway ...  
   * I'm using the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with [this configuration](https://gist.github.com/alexlines/f8a83c4705755b74e7592e686a4832e9)  
   * **Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You need to [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have (which just allow ssh from certain sources) and has "DryRun" set to true (change to false to actually launch an instance), so adjust accordingly.  
+  * This is all very specific to Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.    
 
 
 ```
@@ -150,34 +151,6 @@ cd livepeer_linux/
 ./livepeer
 ```
 
-
-**Test ETH on Rinkeby**  
-  * Figuring out the correct address to request test ETH to from Rinkeby faucet:
-  * When starting `./livepeer --rinkeby` the output says:  
-```
-***Livepeer is running on the Rinkeby test network: 0x37dc71366ec655093b9930bc816e16e6b587f968***
-``` 
-  * but livepeer_cli in 'node status' shows:
-```
-*--------------*--------------------------------------------*
-|  ETH Account | 0x0C47D7852c14001b78c157Fd6Fc8938488CD45F0 |
-*--------------*--------------------------------------------*
-```
-  * and keystore filenames are: 
-```
-$ ls -1 ~/.lpData/keystore/
-UTC--2018-05-02T19-12-28.040032202Z--0c47d7852c14001b78c157fd6fc8938488cd45f0
-```
-  * so to confirm, when I requested ETH from [rinkeby faucet](https://faucet.rinkeby.io/), I requested it be sent to address 0x0C47D7852c14001b78c157Fd6Fc8938488CD45F0 in this [g+ post](https://plus.google.com/+alexlines/posts/HesTiinUH9v) and it worked fine.  
-  * To get test livepeer tokens (LPT), while `livepeer --rinkeby` is running in another terminal or under `screen`, run `livepeer_cli` and select option `10. Get test LPT` sometimes it fails and may need to request again, can watch the console log of `livpeer --rinkeby` to see status.  
-  * To run as a transcoder. First kill the running process `livepeer --rinkeby` and then start it with transcoder flags:  
-  ```
-  ./livepeer --rinkeby --transcoder --publicIP <public ip>  
-  ```
-  * Then run the `./livepeer_cli` in another terminal to register as a transcoder
-    * Choose `15. Become a transcoder`  and choose `PricePerSegment,` `FeeShare,` `BlockRewardCut,` and how much LPT to bond to yourself.  
-  * Your transcoder will not become active until the next round starts - that's currently a period of 1 day.  
-  * Check your status on the explore page https://explorer.livepeer.org/accounts/0x0C47D7852c14001b78c157Fd6Fc8938488CD45F0/transcoding  
   
 **HTTP Query interface**  
   * `curl http://localhost:8935/getAvailableTranscodingOptions`  
@@ -275,8 +248,3 @@ sudo journalctl -u livepeer-transcoder.service -o cat -f
 systemctl status livepeer-transcoder.service
 ```  
 
-This is all very specific to Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.  
-
-* LivePeer CLI - transcoder  
-* run the ./livepeer binary with --publicIP <elastic ip> because it may not know that ...  
-* Send LPT & ETH to the transcoder's ETH account  
