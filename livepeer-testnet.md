@@ -141,7 +141,7 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
 
 
 **Grab LivePeer binaries**  
-  * You can build from scratch if you want but why ...
+  * You can build from scratch if you want but why ... I won't go into that here  
   * Download the latest mainnet-targeted livepeer and livepeer_cli from https://github.com/livepeer/go-livepeer/releases.  
 ```
 curl -s -L https://github.com/livepeer/go-livepeer/releases/download/0.2.4/livepeer_linux.tar.gz > livepeer_linux.tgz
@@ -149,57 +149,6 @@ gzip -d -c livepeer_linux.tar.gz | tar xvf -
 cd livepeer_linux/
 ./livepeer
 ```
-
-
-**Build from scratch if you must**  
-  * See https://github.com/livepeer/go-livepeer  
-```
-sudo apt-get update
-sudo apt-get install golang
-
-
-# edit .profile:
-
-  # edit the version number here as appropriate:
-  export GOROOT="/usr/lib/go-1.6"
-  export GOPATH="$HOME/goprojects"
-
-  # set PATH so it includes user's private bin directories
-  PATH="$HOME/bin:$HOME/.local/bin:$PATH:$GOPATH/bin"
-  
-mkdir goprojects
-
-# ugh this isn't building right now, 
-# just download livepeer_linux and livepeer_linux_cli from https://github.com/livepeer/go-livepeer/releases 
-git clone git@github.com:livepeer/go-livepeer.git
-cd go-livepeer
-go get ./...
-go build ./cmd/livepeer/livepeer.go
-
-sudo apt-get install ffmpeg
-
-# install local ethereum node, https://github.com/ethereum/go-ethereum/wiki/Building-Ethereum
-sudo apt-get install software-properties-common
-sudo add-apt-repository -y ppa:ethereum/ethereum
-sudo apt-get update
-sudo apt-get install ethereum
-geth account new
-# Address: {eee665a9f5bcb3a3e57c66571bbf144ab308d1cf} and pw: emigre smuggle lumbago
-mkdir ~/.lpGeth
-wget http://eth-testnet.livepeer.org/lptestnet.json
-# if it complains about "field Genesis.number" delete the "number" field from lptestnet.json
-geth --datadir ~/.lpGeth init lptestnet.json
-# run geth in a screen session
-screen
-geth --datadir ~/.lpGeth --networkid 858585 --bootnodes "enode://080ebca2373d15762c29ca8d85ddc848f10a7ffc745f7110cacba4694728325d645292cb512d7168323bd0af1650fca825ff54c8dba20aec8878498fae3ff3c6@18.221.67.74:30303"
-# exit the screen session
-# run livepeer node in another screen session
-screen
-chmod 0755 livepeer_linux 
-./livepeer_linux -testnet
-# exit the screen session
-./livepeer_cli_linux
-```  
 
 
 **Test ETH on Rinkeby**  
