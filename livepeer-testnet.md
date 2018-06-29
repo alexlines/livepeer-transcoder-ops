@@ -12,8 +12,12 @@ I want to be sure this transcoder can perform, so for the initial phase I've ove
 
 | | |  
 | --- | --- |  
-| column one | column two |  
-| col two | col three | 
+| Instance type | [c4.2xlarge](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly)  |  
+| CPU | 8 vCPUs | 
+| Network | High |
+| EBS Optimized | Yes |
+| OS | Ubuntu 18.04 LTS |
+| Root disk | EBS-backed, 32GB gp2 SSD |
 
 The instructions below will spin up a [c4.2xlarge](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly) instance in us-east with 15GB RAM, 8vCPUs, "High" network perf, [EBS optimized](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html) running an [EBS-backed Ubuntu 18.04 LTS image](https://cloud-images.ubuntu.com/locator/ec2/). This is not a cheap instance - cost is ~$300/month (on-demand).  The boot volume is a 32GB [gp2 standard SSD](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_gp2), and a dedicated 100GB gp2 SSD EBS volume (additional ~ $10/month) for LivePeer data, and a dedicated 500GB gp2 SSD EBS volume (additional ~ $50/month) for running a local geth node are also attached. See "Future Architecture Directions" below for directions for building real infrastructure in the future.   
 * I'm using the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with [this configuration](https://gist.github.com/alexlines/f8a83c4705755b74e7592e686a4832e9)  
