@@ -6,8 +6,14 @@
 The goal is to run robust infrastructure for the LivePeer transcoding network. I care about  
 * Availability, Performance, Security, Repeatability, Fast recovery  
 
-**Notes on implementation choices**  
-* I want to be sure this instance can perform, so in the early days I've overprovisioned the resources of CPU, RAM, disk performance, and bandwidth. This means this specific configuration is expensive so feel free to choose lower-resource instance types. The configurations below will spin up a [c4.2xlarge](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly) instance in us-east with 15GB RAM, 8vCPUs, "High" network perf, [EBS optimized](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html) running an [EBS-backed Ubuntu 18.04 LTS image](https://cloud-images.ubuntu.com/locator/ec2/). This is not a cheap instance - cost is ~$300/month (on-demand).  The boot volume is a 32GB [gp2 standard SSD](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_gp2), and a dedicated 100GB gp2 SSD EBS volume (additional ~ $10/month) for LivePeer data, and a dedicated 500GB gp2 SSD EBS volume (additional ~ $50/month) for running a local geth node are also attached. See "Future Architecture Directions" below for directions for building real infrastructure in the future.   
+**Instance type and resources**  
+I want to be sure this transcoder can perform, so for the initial phase I've overprovisioned the resources of CPU, RAM, disk performance, and bandwidth (details below). This means this specific configuration is expensive so feel free to choose lower-resource instance types.  
+
+
+| column one | column two |  
+| col two | col three | 
+
+The instructions below will spin up a [c4.2xlarge](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly) instance in us-east with 15GB RAM, 8vCPUs, "High" network perf, [EBS optimized](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html) running an [EBS-backed Ubuntu 18.04 LTS image](https://cloud-images.ubuntu.com/locator/ec2/). This is not a cheap instance - cost is ~$300/month (on-demand).  The boot volume is a 32GB [gp2 standard SSD](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_gp2), and a dedicated 100GB gp2 SSD EBS volume (additional ~ $10/month) for LivePeer data, and a dedicated 500GB gp2 SSD EBS volume (additional ~ $50/month) for running a local geth node are also attached. See "Future Architecture Directions" below for directions for building real infrastructure in the future.   
 * I'm using the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with [this configuration](https://gist.github.com/alexlines/f8a83c4705755b74e7592e686a4832e9)  
 * **Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You can [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have (which just allow ssh from certain sources) and has "DryRun" set to true (change to false to actually launch an instance), so adjust accordingly.  
 * This is all very specific to AWS and Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.   
@@ -18,7 +24,7 @@ aws --profile notation ec2 run-instances \
     --cli-input-json file://livepeer-transcoder-ec2-config.json  
 ```  
 
-* Allocate elastic ip  
+Allocate elastic ip  
 ```
 aws --profile notation ec2 allocate-address  
 aws --profile notation ec2 associate-address --instance-id <instance id> --public-ip <ip address>  
