@@ -50,6 +50,7 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
 
 **LivePeer questions**  
 * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
+* I've been running for a few days with `-initializeRound` but it will literally sit there for hours waiting for the round to be initialized (and I've initialized it manually a few times).  
 * Sane recommended -gasLimit to start with? -> sounds like omitting gasPrice flag might be the way to go after 0.2.3, which will rely on the gas oracle instead.  
 * Setting up an automatic call to `reward()` once per round. It looks like it calls it automatically at the beginning of every round, but it can fail - if connection to Ethereum node isn't good, if gas prices are high, etc. If it doesn't get called, the newly minted LPT are lost, so it's v important to check.  
   * Can it be called via the http interface?  
