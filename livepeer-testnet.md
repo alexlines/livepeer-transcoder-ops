@@ -1,45 +1,47 @@
 ## Running a LivePeer transcoder   
 * Goals  
-* 
 * Future Architecture Directions  
 
 The goal is to run robust infrastructure for the LivePeer transcoding network. I care about  
-* Availability, Performance, Security, Repeatability, Fast recovery  
+* Availability, Performance, Security, Repeatability, Fast recovery   
+* This is all very specific to AWS and Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.   
 
 **Instance type and resources**  
 I want to be sure this transcoder can perform, so for the initial phase I've overprovisioned the resources of CPU, RAM, disk performance, and bandwidth (details below). This means this specific configuration is expensive so feel free to choose lower-resource instance types.  
 
+The instructions below will spin up an instance with the following characteristics:  
 
 | | |  
 | --- | --- |  
 | Instance type | [c4.2xlarge](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly)  |  
 | CPU | 8 vCPUs | 
 | Network | High |
-| EBS Optimized | Yes |
-| OS | Ubuntu 18.04 LTS |
-| Root disk | EBS-backed, 32GB gp2 SSD |
+| EBS Optimized | [YES](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html) |
+| OS | ami-85f9b8fa [Ubuntu 18.04 LTS HVM AMI](https://cloud-images.ubuntu.com/locator/ec2/) |
+| Root disk | EBS-backed, 32GB [gp2 SSD](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_gp2) |
+| EBS Vol 1 | 100GB gp2 SSD for LivePeer data |
+| EBS Vol 2 | 500 GB gp2 SSD for dedicated local geth node |  
 
-The instructions below will spin up a [c4.2xlarge](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly) instance in us-east with 15GB RAM, 8vCPUs, "High" network perf, [EBS optimized](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html) running an [EBS-backed Ubuntu 18.04 LTS image](https://cloud-images.ubuntu.com/locator/ec2/). This is not a cheap instance - cost is ~$300/month (on-demand).  The boot volume is a 32GB [gp2 standard SSD](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_gp2), and a dedicated 100GB gp2 SSD EBS volume (additional ~ $10/month) for LivePeer data, and a dedicated 500GB gp2 SSD EBS volume (additional ~ $50/month) for running a local geth node are also attached. See "Future Architecture Directions" below for directions for building real infrastructure in the future.   
-* I'm using the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with [this configuration](https://gist.github.com/alexlines/f8a83c4705755b74e7592e686a4832e9)  
-* **Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You can [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have (which just allow ssh from certain sources) and has "DryRun" set to true (change to false to actually launch an instance), so adjust accordingly.  
-* This is all very specific to AWS and Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.   
+You can use the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with these characteristics using [this configuration file](https://gist.github.com/alexlines/f8a83c4705755b74e7592e686a4832e9) as follows:  
+**Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You can [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have (which just allow ssh from certain sources), a private key of a different name, and has "DryRun" set to true (change to false to actually launch an instance), so adjust accordingly.   
 
-
+Launch the instance  
 ```
 aws --profile notation ec2 run-instances \
     --cli-input-json file://livepeer-transcoder-ec2-config.json  
 ```  
 
-Allocate elastic ip  
+
+Allocate elastic ip  to have a stable public address  
 ```
 aws --profile notation ec2 allocate-address  
 aws --profile notation ec2 associate-address --instance-id <instance id> --public-ip <ip address>  
 ```   
 
 
-**Grab LivePeer binaries**  
-* You can build from scratch if you want but why ... I won't go into that here  
-* Download the latest mainnet-targeted livepeer and livepeer_cli from https://github.com/livepeer/go-livepeer/releases.  
+Grab LivePeer binaries  
+You can build from scratch if you want but why ... I won't go into that here  
+Download the latest mainnet-targeted livepeer and livepeer_cli from https://github.com/livepeer/go-livepeer/releases.  
 ```
 curl -s -L https://github.com/livepeer/go-livepeer/releases/download/0.2.4/livepeer_linux.tar.gz > livepeer_linux.tgz
 gzip -d -c livepeer_linux.tar.gz | tar xvf -
@@ -48,10 +50,10 @@ cd livepeer_linux/
 ```
 
 
-**System Ops**  
-* If the EBS volumes weren't created at instance instatiation, create them now. EBS Optimized may not be critical, we don't know yet, but will help conserve network IO for receiving/sending video.  
-* 100GB gp2 disk for LivePeer storage / operations  
-* Adjust availability zone to match instance az  
+System Ops  
+If the EBS volumes weren't created at instance instatiation, create them now.   
+100GB gp2 disk for LivePeer storage / operations   
+Adjust the availability zone to match instance az   
 ```
 aws --profile notation ec2 create-volume --size 100 --region us-east-1 --availability-zone us-east-1a --volume-type gp2  
 aws --profile notation ec2 attach-volume --device /dev/sdg --instance-id <instance-id> --volume-id <volume-id>  
@@ -62,8 +64,8 @@ echo "UUID=<volume UUID> /d1 ext4 defaults 0 2" | sudo tee -a /etc/fstab
 sudo mount /d1    
 ```  
 
-* 500GB gp2 disk for geth  
-* Adjust availability zone to match instance az   
+500GB gp2 SSD disk for running local geth    
+Adjust availability zone to match instance az   
 ```
 aws --profile notation ec2 create-volume --size 500 --region us-east-1 --availability-zone us-east-1a --volume-type gp2  
 aws --profile notation ec2 attach-volume --device /dev/sdh --instance-id <instance-id> --volume-id <volume-id>  
@@ -75,20 +77,20 @@ sudo mount /dev/xvdh /d2
 ```  
 
 
-* Filesystem operations  
+Filesystem operations   
 ```
 sudo mkdir -p /d1/livepeer/logs  
 sudo mv -i livepeer_linux /d1/livepeer/bin  
 sudo chown -R ubuntu:ubuntu /d1/livepeer  
 ```  
 
-* Raise open filehandle limits  
+Raise open filehandle limits   
 ```  
 echo "ubuntu soft nofile 50000" | sudo tee -a /etc/security/limits.conf
 echo "ubuntu hard nofile 50000" | sudo tee -a /etc/security/limits.conf
 ```  
 
-* Install geth [more detail here](https://gist.github.com/alexlines/b6332b3d0bf01a20e3c217d54e2a8867)   
+Install geth [more detail here](https://gist.github.com/alexlines/b6332b3d0bf01a20e3c217d54e2a8867)    
 geth systemd stuff  
 geth config file  
 periodically kill it ...  
@@ -121,9 +123,9 @@ systemctl status geth.service
 
 Wait a few minutes and make sure geth is grabbing latest blocks. Sometimes you have to wait 15 minutes, kill it, and restart it before it begins syncing them.  
 
-* If you have existing data files / keys, copy them into place now (.lpData, etc)  
+If you have existing data files / keys, copy them into place now (.lpData, etc)   
 
-* install systemd script  
+install systemd script   
 ```  
 sudo cp <path to>/livepeer-transcoder.service /etc/systemd/system/
 sudo systemctl enable livepeer-transcoder    [or reenable]
