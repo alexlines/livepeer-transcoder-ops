@@ -9,7 +9,7 @@ The goal is to run robust infrastructure for the LivePeer transcoding network. I
 **Instance type and resources**  
 I want to be sure this transcoder can perform, so for the initial phase I've overprovisioned the resources of CPU, RAM, disk performance, and bandwidth (details below). This means this specific configuration is expensive so feel free to choose lower-resource instance types.  
 
-
+| --- | --- |  
 | column one | column two |  
 | col two | col three | 
 
