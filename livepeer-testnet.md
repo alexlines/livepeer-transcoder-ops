@@ -169,6 +169,7 @@ systemctl status livepeer-transcoder.service
 
 
 **LivePeer questions**  
+* **Note** Don't forget the [upcoming networking updates!](https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go)  
 * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
 * I've been running for a few days with `-initializeRound` but it will literally sit there for hours waiting for the round to be initialized (and I've initialized it manually a few times).  
 * Sane recommended -gasLimit to start with? -> sounds like omitting gasPrice flag might be the way to go after 0.2.3, which will rely on the gas oracle instead.  
@@ -177,14 +178,14 @@ systemctl status livepeer-transcoder.service
     * According to the docs https://livepeer.readthedocs.io/en/latest/node.html, the CLI works by communicating with the HTTP interface, and you can open that up by setting the `--httpIP` option at runtime  
   * Is it ok to call it more than once per round?  
 * Worth setting up a dedicated ipfs node in local network?  
-* Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg?  
+* Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? short answer: Not yet  
+  * Adding GPU Acceleration to transcoding is still an [open issue](https://github.com/livepeer/lpms/issues/33). 
   * GPU transcoding is not currently supported, according to Doug, "Currently we support deterministic CPU transcoding, but we're working on what you read in the above proposal to enable GPU transcoding in a way that will not disrupt GPU mining operations"  
-  * In [issue #51 Transcoder Design](https://github.com/livepeer/lpms/issues/51#issuecomment-362502511), j0sh mentions  
+  * In [issue #51 Transcoder Design](https://github.com/livepeer/lpms/issues/51#issuecomment-362502511), j0sh goes into a bit more depth on which areas may benefit from GPU    
   > There are some workloads in the transcoding pipeline that might benefit from GPU (such as colorspace conversion), but encoding generally benefits more from SIMD (AVX) or fixed function hardware (QuickSync). That being said, FFMpeg already supports the Intel MediaSync SDK which I believe is able to run certain operations on the (Intel?) GPU natively. I'm hoping that enabling MediaSync support is as simple as installing the library and setting the ffmpeg configure flag. We'd likely need run-time hardware detection as well.
- > 
- > GPUs might help more with verification, but it'd depend on the method we choose.  
-  * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184)  
-  * More GPU thoughts in [Transcoder Design #51](https://github.com/livepeer/lpms/issues/51) issue and adding GPU Acceleration to transcoding is still an [open issue](https://github.com/livepeer/lpms/issues/33).  
+  > GPUs might help more with verification, but it'd depend on the method we choose.   
+  * See also the [Transcoder Design doc](https://github.com/livepeer/lpms/wiki/Transcoder-Design)  
+  * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184)   
 * Best way to backup the account / credentials tied to the node?  
 * What livepeer / ipfs / etc logs needs to be rotated?  
 * Nice to have: Make sure `initializeRound()` has been called - cannot call `reward()` until it has  
@@ -236,6 +237,9 @@ systemctl status livepeer-transcoder.service
   * Go and systemd both support watchdog http://0pointer.de/blog/projects/watchdog.html  
   * Any admin interface available via network - http, etc? Or do you need to build an http request -> livepeer_cli  
 * Securing your node and access to private ETH key  
+  * Tradeoffs, hacks, etc.  
+  * Storing private key in [AWS Parameter Store](https://aws.amazon.com/systems-manager/features/#Parameter_Store) in AWS [Key Management Service](https://aws.amazon.com/kms/)?  
+  * It's just that the ethereum client doesn't seem to have the capability to get the account key over the network or from anything other than a file https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go  
 * Running a local geth node would definitely be helpful
   * Although it's not 100% clear in the docs - offical docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. I know that it's not required but I think it's clearly beneficial, eg:  
   * "If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network."  
