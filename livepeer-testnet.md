@@ -85,6 +85,16 @@ sudo chown -R ubuntu:ubuntu /d1/livepeer
 ```  
 
 Raise open filehandle limits   
+Note this only works for interactive sessions  
+* goog: [pam only interactive sessions limits.conf](https://www.google.com/search?ei=1AcoW7u6NouO5wLFwLGYBQ&q=pam+only+interactive+sessions+limits.conf&oq=pam+only+interactive+sessions+limits.conf&gs_l=psy-ab.3...34167.35606.0.35727.8.8.0.0.0.0.111.586.6j2.8.0....0...1c.1.64.psy-ab..2.0.0....0.yu30VBOhsmU)  
+> PAM is intended as a user oriented library, and daemons are by definition
+not users. In man limits.conf, it is clearly stated:
+> 
+>      Also, please note that all limit settings are set per login. They
+>      are not global, nor are they permanent; existing only for the
+>      duration of the session.
+from https://bugs.launchpad.net/ubuntu/+source/upstart/+bug/938669  
+* Also https://askubuntu.com/a/288534  
 ```  
 echo "ubuntu soft nofile 50000" | sudo tee -a /etc/security/limits.conf
 echo "ubuntu hard nofile 50000" | sudo tee -a /etc/security/limits.conf
@@ -153,7 +163,7 @@ systemctl status livepeer-transcoder.service
   * Make sure timesync is active. In 18.04, base system uses [systemd-timesyncd](https://www.freedesktop.org/software/systemd/man/timedatectl.html) which may be fine, but probably want to use chrony for better accuracy and syncing.  
    * Some [Chrony](https://chrony.tuxfamily.org/) links: [FAQ](https://chrony.tuxfamily.org/faq.html), also [Time Sync](https://help.ubuntu.com/lts/serverguide/NTP.html) in Ubuntu, and a [basic chrony config overview](https://blog.ubuntu.com/2018/04/09/ubuntu-bionic-using-chrony-to-configure-ntp).  
   * Run LP on a dedicated attached EBS vol, not the default root vol ...  
-  * What livepeer / ipfs / etc logs needs to be rotated?   
+  * [Log rotation?](https://www.digitalocean.com/community/tutorials/how-to-manage-logfiles-with-logrotate-on-ubuntu-16-04)   
   * Oh, so livepeerjs is the main official API (via RPC)? Kindof missed that https://github.com/livepeer/livepeerjs/tree/master/packages/sdk ... oh, so it's for interacting with LP smart contracts, sot it doesn't expose reward(), but maybe could use to monitor whether transcoder x has successfully called reward() this round? I wonder if you could also just call it via mycrypto? doesn't look like reward is exposed via the ABI that doug sent us. Can definitely use it to get info about a specific transcoder with `getTranscoder('0xf00...')` can also use it to set transcoder parameters, which is useful, but strange you can't call reward?  
   * Making sure that `reward()` gets called is a priority  
   * Maybe just use ELB's for health checks (not sure about classic ELB vs ALB yet)  
@@ -178,6 +188,7 @@ systemctl status livepeer-transcoder.service
     * According to the docs https://livepeer.readthedocs.io/en/latest/node.html, the CLI works by communicating with the HTTP interface, and you can open that up by setting the `--httpIP` option at runtime  
   * Is it ok to call it more than once per round?  
 * Worth setting up a dedicated ipfs node in local network?  
+* LivePeer issues with transactions - couldn't call reward, behavior was actually very similar to [issue #455](https://github.com/livepeer/go-livepeer/issues/455) and was only fixed by restarting geth & livepeer  
 * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? short answer: Not yet  
   * Adding GPU Acceleration to transcoding is still an [open issue](https://github.com/livepeer/lpms/issues/33). 
   * GPU transcoding is not currently supported, according to Doug, "Currently we support deterministic CPU transcoding, but we're working on what you read in the above proposal to enable GPU transcoding in a way that will not disrupt GPU mining operations"  
@@ -213,7 +224,7 @@ systemctl status livepeer-transcoder.service
       ```
       curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionByHash","params":["0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f"],"id":1}' http://localhost:8545  
       ```
-      but there's not an easy way to list recent transactions for an account or contract ... looks like filters/logs are the way to do this?  
+      but there's not an easy way to list recent transactions for an account or contract ... looks like filters/logs are the way to do this? https://github.com/ethereum/go-ethereum/issues/1897  or here https://github.com/ethereum/go-ethereum/issues/2104  
       * But still need to decode the `input` param and translate it to the function name. According to the [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI), "the first four bytes of the call data for a function call specifies the function to be called. It is the first (left, high-order in big-endian) four bytes of the Keccak (SHA-3) hash of the signature of the function."   
         * GitHub: [ConsenSys ABI decoder](https://github.com/ConsenSys/abi-decoder) project    
         * GitHub: [Ethereum tx input data decoder project](https://github.com/miguelmota/ethereum-input-data-decoder)  
@@ -239,6 +250,8 @@ systemctl status livepeer-transcoder.service
 * Securing your node and access to private ETH key  
   * Tradeoffs, hacks, etc.  
   * Storing private key in [AWS Parameter Store](https://aws.amazon.com/systems-manager/features/#Parameter_Store) in AWS [Key Management Service](https://aws.amazon.com/kms/)?  
+  * [Getting started with AWS Parameter store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-paramstore.html) see also How AWS [Systems Manager Parameter Store Uses AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/services-parameter-store.html?shortFooter=true)  
+  * goog: [golang example aws kms](https://www.google.com/search?biw=1295&bih=1103&ei=N30yW4aHJ8vxzgLp1J-gBw&q=golang+example+aws+kms&oq=golang+example+aws+kms&gs_l=psy-ab.3..33i22i29i30k1.231231.237437.0.238301.22.17.0.4.4.0.305.1360.3j7j0j1.11.0....0...1c.1.64.psy-ab..8.14.1249...0j0i67k1j0i131i67k1j0i131k1j0i22i30k1.0.7Ap2nvkZiVw)  
   * It's just that the ethereum client doesn't seem to have the capability to get the account key over the network or from anything other than a file https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go  
 * Running a local geth node would definitely be helpful
   * Although it's not 100% clear in the docs - offical docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. I know that it's not required but I think it's clearly beneficial, eg:  
