@@ -179,6 +179,10 @@ systemctl status livepeer-transcoder.service
 * Worth setting up a dedicated ipfs node in local network?  
 * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg?  
   * GPU transcoding is not currently supported, according to Doug, "Currently we support deterministic CPU transcoding, but we're working on what you read in the above proposal to enable GPU transcoding in a way that will not disrupt GPU mining operations"  
+  * In [issue #51 Transcoder Design](https://github.com/livepeer/lpms/issues/51#issuecomment-362502511), j0sh mentions  
+  > There are some workloads in the transcoding pipeline that might benefit from GPU (such as colorspace conversion), but encoding generally benefits more from SIMD (AVX) or fixed function hardware (QuickSync). That being said, FFMpeg already supports the Intel MediaSync SDK which I believe is able to run certain operations on the (Intel?) GPU natively. I'm hoping that enabling MediaSync support is as simple as installing the library and setting the ffmpeg configure flag. We'd likely need run-time hardware detection as well.
+ > 
+ > GPUs might help more with verification, but it'd depend on the method we choose.  
   * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184)  
   * More GPU thoughts in [Transcoder Design #51](https://github.com/livepeer/lpms/issues/51) issue and adding GPU Acceleration to transcoding is still an [open issue](https://github.com/livepeer/lpms/issues/33).  
 * Best way to backup the account / credentials tied to the node?  
