@@ -40,7 +40,7 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
 
 
 Grab LivePeer binaries  
-You can build from scratch if you want but why ... I won't go into that here  
+You can build from scratch if you want but why ... I won't go into that, read more about it in the [official README](https://github.com/livepeer/go-livepeer/blob/master/README.md)    
 Download the latest mainnet-targeted livepeer and livepeer_cli from https://github.com/livepeer/go-livepeer/releases.  
 ```
 curl -s -L https://github.com/livepeer/go-livepeer/releases/download/0.2.4/livepeer_linux.tar.gz > livepeer_linux.tgz
