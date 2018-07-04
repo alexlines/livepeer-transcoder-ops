@@ -208,6 +208,7 @@ systemctl status livepeer-transcoder.service
   * Maybe to the monitor server here? https://github.com/livepeer/go-livepeer/blob/master/monitor/monitor.go  
   * Looks like there's a separate monitor server project https://github.com/livepeer/streamingviz  ... although it hasn't been touched in a year  
   * Or publish them to CloudWatch? https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html  
+    * Maybe with [custom events](https://aws.amazon.com/blogs/security/how-to-use-amazon-cloudwatch-events-to-monitor-application-health/)?  
     * https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-cw.html  
     * Monitor and document that reward() is called daily, publish to public cloudwatch dashboard? How to monitor?  
     * Can check if reward() was called by watching the latest transactions from the transcoder's account, either via the [etherscan API](https://etherscan.io/apis)
