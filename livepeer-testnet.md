@@ -9,6 +9,12 @@ EBS Volumes - config and data concentration, separate from root disk, flexilibit
 process supervision - systemd  
 timekeeping - obviously important. In Ubuntu 18.04, the base system uses systemd-timesyncd which may be fine, but may want to consider using chrony for better accuracy and syncing **(grab links from below).**  
 running a local geth node  
+Security
+* Automating startup of `livepeer` by automatically supplying a password for the ethereum?  
+  * I just supplied a blank password the first time and then it doesn't ask for password on startup in the future  
+  * What are implications of no password? For backing up files, for security of account in general, etc?  
+  * Could just do it via command-line, but don't really want it to be visible to 'ps'  
+  * Would prefer at least a config file if nothing else ... 
 
 
 
@@ -171,7 +177,7 @@ sudo journalctl -u livepeer-transcoder.service -f
   * Unable to communicate with the geth node - I've seen the local geth node appear to run fine and continue to stay sync'd to latest blocks and log that it's submitting transactions (such as calls to reward), but they fail silently and no errors or warnings are produced. LivePeer [issue #455](https://github.com/livepeer/go-livepeer/issues/455) documents a problem similar to this. In such cases, I've restarted first the geth node, waited for it to sync (a couple minutes at most), and then restarted the livepeer node. This is annoying enough to consider restarting geth automatically on a nightly (!) basis.  
 
 
-**LivePeer questions**  
+**LivePeer questions I had but was able to answer**  
 * **Note** Don't forget the [upcoming networking updates!](https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go)  
 * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
 * Is it ok to call `reward()` more than once per round? Yes, it will just say "reward already called for this round."  
@@ -254,15 +260,15 @@ sudo journalctl -u livepeer-transcoder.service -f
 * What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
   * I guess the identity is just the eth address of the account, so as long as you migrate that to a new machine it should be fine  
 * How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?  
-* Automating startup of `livepeer` by automatically supplying a password for the ethereum?  
-  * I just supplied a blank password the first time and then it doesn't ask for password on startup in the future  
-  * What are implications of no password? For backing up files, for security of account in general, etc?  
-  * Could just do it via command-line, but don't really want it to be visible to 'ps'  
-  * Would prefer at least a config file if nothing else ...  
-* Specifying `-log_dir` on the command line only moved where the ipfs log file got written, `livepeer` still wrote its log to stderr.  
-* How to know if you've been slashed?  
+ 
+ 
 * Gas: Doug says 10Gwei is a safe price - does that mean you’ll pay 10Gwei every time?? or that’s just max price  
 * Capacity planning - how to estimate transcoding rate (how long to transcode each second of output video) based on machine resources?  
+
+**LivePeer open questions**  
+* How to know if you've been slashed?  
+* Specifying `-log_dir` on the command line only moved where the ipfs log file got written, `livepeer` still wrote its log to stderr.  
+
 
 **Becoming an active transcoder on mainnet**  
 * **spin up a fresh node but try to put an old account in place before starting the livepeer binary**  
