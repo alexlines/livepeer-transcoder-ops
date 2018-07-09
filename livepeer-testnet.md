@@ -8,6 +8,7 @@ instance size
 EBS Volumes - config and data concentration, separate from root disk, flexilibity - easily expandable, easily transferred to new instance (speed of recovery), easy to backup (EBS snapshots, easily automated)  
 process supervision - systemd  
 timekeeping - obviously important. In Ubuntu 18.04, the base system uses systemd-timesyncd which may be fine, but may want to consider using chrony for better accuracy and syncing **(grab links from below).**  
+running a local geth node  
 
 
 
@@ -162,19 +163,20 @@ sudo journalctl -u livepeer-transcoder.service -f
 ```  
 
 
+**Operational Notes**  
+* Running with `initializeRound` can get expensive when gas is high (I've seen ~$40)  
+* Making sure `reward()` gets called everyday is the most important thing right now, after making sure everything is up and running. This generally succeeds, but, in the absence of rock-solid monitoring and alerting on this event, you should manually check it every day. Go set a reminder in your calendar to check it every day at 4pm. While you're there, set another reminder at 9pm. If the call hasn't succeeded for the day, use the command line interface to call `reward()` manually. Some reasons I've seen that can cause it to fail:  
+  * You don't have enough ETH in your transcoder's account. You should monitor this and replenish as necessary.  
+  * If gas prices spike, this can cause slowness and for transactions to fail, especially if you don't have enough funds (see above).  
+  * Unable to communicate with the geth node - I've seen the local geth node appear to run fine and continue to stay sync'd to latest blocks and log that it's submitting transactions (such as calls to reward), but they fail silently and no errors or warnings are produced. LivePeer [issue #455](https://github.com/livepeer/go-livepeer/issues/455) documents a problem similar to this. In such cases, I've restarted first the geth node, waited for it to sync (a couple minutes at most), and then restarted the livepeer node. This is annoying enough to consider restarting geth automatically on a nightly (!) basis.  
 
 
 **LivePeer questions**  
 * **Note** Don't forget the [upcoming networking updates!](https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go)  
 * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
-* I've been running for a few days with `-initializeRound` but it will literally sit there for hours waiting for the round to be initialized (and I've initialized it manually a few times).  
-* Sane recommended -gasLimit to start with? -> sounds like omitting gasPrice flag might be the way to go after 0.2.3, which will rely on the gas oracle instead.  
-* Setting up an automatic call to `reward()` once per round. It looks like it calls it automatically at the beginning of every round, but it can fail - if connection to Ethereum node isn't good, if gas prices are high, etc. If it doesn't get called, the newly minted LPT are lost, so it's v important to check.  
-  * Can it be called via the http interface?  
-    * According to the docs https://livepeer.readthedocs.io/en/latest/node.html, the CLI works by communicating with the HTTP interface, and you can open that up by setting the `--httpIP` option at runtime  
-  * Is it ok to call it more than once per round?  
-* Worth setting up a dedicated ipfs node in local network?  
-* LivePeer issues with transactions - couldn't call reward, behavior was actually very similar to [issue #455](https://github.com/livepeer/go-livepeer/issues/455) and was only fixed by restarting geth & livepeer  
+* Is it ok to call `reward()` more than once per round? Yes, it will just say "reward already called for this round."  
+* Is it worth setting up a dedicated ipfs node in local network? Doesn't look like it's necessary at this time.  
+
 * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? short answer: Not yet  
   * Adding GPU Acceleration to transcoding is still an [open issue](https://github.com/livepeer/lpms/issues/33). 
   * GPU transcoding is not currently supported, according to Doug, "Currently we support deterministic CPU transcoding, but we're working on what you read in the above proposal to enable GPU transcoding in a way that will not disrupt GPU mining operations"  
@@ -295,13 +297,18 @@ sudo journalctl -u livepeer-transcoder.service -f
   - Auto-scaling  
 - Monitoring, Alerting, Metrics Collection  
   - Health checks of LivePeer instance  
-  - Monitor and alert if reward() doesn't get called
+  - Monitor and alert if reward() doesn't get called  
+  - Monitor amount of ETH in transcoder's account and alert if below certain threshold.  
 - Security  
   - Better management of Ethereum private keys  
   - Possibly using Hashicorp's Vault for private keys or AWS KMS   
 - EBS Volumes
   - Automate EBS snapshots  
   - Encrypt EBS Volumes by default?  
+- Local geth node  
+  - Would it benefit from being a fast-sync node or a full node?  
+  - Should probably move geth to a dedicated instance that multiple local transcoder nodes can connect to  
+  - Should probably run a local geth cluster in each region you plan to run transcoders  
 - Log rotation for LivePeer and geth logs    
 - Helpful to give the instance an DNS and/or ENS name?  
 - Better documentation of AWS Security groups, IAM users and permissions, ssh gateway host, etc  
