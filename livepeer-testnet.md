@@ -1,6 +1,40 @@
 ## Running a LivePeer transcoder   
 * Goals  
 * Future Architecture Directions  
+* OPs TODO:    
+  - testing  
+  - monitoring  
+  - alerting  
+  - metrics collection  
+  - health checks  
+  - load balancing  
+  - automatic failover  
+  - regional routing  
+  - auto-scaling  
+  - configuration management  
+  - automated deployment  
+  - better security  
+  - sophisticated key management  
+  - automate EBS snapshots  
+  - EBS Volumes encrypted by default?  
+  - Log rotation for LivePeer and geth logs  
+  - monitor and alert if reward() doesn't get called  
+  - Dockerize
+  - Possibly using Hashicorp's Vault for private keys or AWS KMS  
+  - Helpful to give the instance an DNS and/or ENS name?  
+  - Use [AWS Launch Templates](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html)?  
+  - Better documentation of AWS Security groups, IAM users and permissions, ssh gateway host, etc  
+  
+* Config is code  
+* Decisions  
+platform - AWS, Linux, Ubuntu  
+instance size  
+EBS Volumes - config and data concentration, separate from root disk, flexilibity - easily expandable, easily transferred to new instance (speed of recovery), easy to backup (EBS snapshots, easily automated)  
+process supervision - systemd  
+timekeeping - obviously important. In Ubuntu 18.04, the base system uses systemd-timesyncd which may be fine, but may want to consider using chrony for better accuracy and syncing **(grab links from below).**  
+
+
+
 
 The goal is to run robust infrastructure for the LivePeer transcoding network. I care about  
 * Availability, Performance, Security, Repeatability, Fast recovery   
@@ -100,6 +134,15 @@ If you're running the LivePeer binary through non-interactive processes (upstart
 echo "ubuntu soft nofile 50000" | sudo tee -a /etc/security/limits.conf
 echo "ubuntu hard nofile 50000" | sudo tee -a /etc/security/limits.conf
 ```  
+And edit `/etc/pam.d/login` and add or uncomment the line:
+```
+session required /lib/security/pam_limits.so
+```
+You don't have to restart the system, just log out and log back in, start some long-running or background process, note its PID and then look at:
+```
+cat /proc/<PID>/limits 
+```
+to confirm the limit has been raised.  
 
 **Install geth and run in light mode**  
 geth systemd stuff  
