@@ -77,78 +77,69 @@ sudo mount /dev/xvdh /d2
 ```  
 
 
-Filesystem operations   
+**Filesystem operations**   
+For this setup, All LivePeer-specific files (binaries, logs, ethereum accounts, keys, etc) live on a dedicated EBS volume under /d1. The EBS volume can be backed-up via EBS snapshots and easily attached to a new instance if necessary.  
 ```
 sudo mkdir -p /d1/livepeer/logs  
 sudo mv -i livepeer_linux /d1/livepeer/bin  
 sudo chown -R ubuntu:ubuntu /d1/livepeer  
 ```  
 
-Raise open filehandle limits   
-Note this only works for interactive sessions  
-* goog: [pam only interactive sessions limits.conf](https://www.google.com/search?ei=1AcoW7u6NouO5wLFwLGYBQ&q=pam+only+interactive+sessions+limits.conf&oq=pam+only+interactive+sessions+limits.conf&gs_l=psy-ab.3...34167.35606.0.35727.8.8.0.0.0.0.111.586.6j2.8.0....0...1c.1.64.psy-ab..2.0.0....0.yu30VBOhsmU)  
+**Raise open filehandle limits**   
+As noted in this (LivePeer FAQ](https://livepeer.readthedocs.io/en/latest/transcoding.html#faq), you can encounter the "too many open files" error when running a transcoder. As Eric notes in [this forum post](https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170), raising the open file handle limit via pam will address this, but only for cases where you are running the livepeer node manually from an interactive session (e.g., you logged in via ssh):
+from https://bugs.launchpad.net/ubuntu/+source/upstart/+bug/938669  
 > PAM is intended as a user oriented library, and daemons are by definition
 not users. In man limits.conf, it is clearly stated:
 > 
 >      Also, please note that all limit settings are set per login. They
 >      are not global, nor are they permanent; existing only for the
->      duration of the session.
-from https://bugs.launchpad.net/ubuntu/+source/upstart/+bug/938669  
-* Also https://askubuntu.com/a/288534  
+>      duration of the session.  
+See also the responses to this question about the same https://askubuntu.com/a/288534  
+If you're running the LivePeer binary through non-interactive processes (upstart, systemd, etc), you need to raise the limit via a different approach (see our systemd config below). We'll go ahead and raise the limits for interactive sessions in case you want to run manually to debug, etc.  
 ```  
 echo "ubuntu soft nofile 50000" | sudo tee -a /etc/security/limits.conf
 echo "ubuntu hard nofile 50000" | sudo tee -a /etc/security/limits.conf
 ```  
 
-Install geth [more detail here](https://gist.github.com/alexlines/b6332b3d0bf01a20e3c217d54e2a8867)    
+**Install geth and run in light mode**  
 geth systemd stuff  
-geth config file  
-periodically kill it ...  
+Is a geth config file possible?  
+Still need to periodically kill it ...  
 ```
 sudo apt-get install -y software-properties-common
 sudo add-apt-repository -y ppa:ethereum/ethereum
 sudo apt-get update
-sudo apt-get install -y ethereum
+sudo apt-get install -y ethereum  
+```
+geth data and logs will all live on a dedicated EBS volume (but not binaries, those get installed in default locations via apt-get install) under /d2/ for easy backups via snapshots and to easily attach to a new instance.  Run geth via systemd.  
+```
 sudo mkdir /d2/geth-data
 sudo chown -R ubuntu:ubuntu /d2/geth-data
 cd /d2/geth-data
-# manually:
-screen  
-geth --datadir "/d2/geth-data/.ethereum" --cache 512 --maxpeers 25 --syncmode light --rpc --rpcapi db,eth,net,web3 --ws --wsorigins "*"  
 
+# make sure existing .ethereum files are in place now, depends on /d2/geth-data/.ethereum  
 # via systemd
-sudo cp <path to>/geth.service /etc/systemd/system/
+sudo cp /d1/livepeer-transcoder-ops/geth/private/config/systemd ??? maybe /geth.service /etc/systemd/system/
 sudo systemctl enable geth    [or reenable]
-sudo systemctl start geth
-tail /var/log/syslog
-# OR
-kill $(pgrep geth)
-# OR
-sudo systemctl restart geth
-# watch the logs
+sudo systemctl start|stop|restart geth
+
+# check the status and logs
+sudo systemctl status geth ??? correct?
 sudo journalctl -u geth.service -f
-sudo journalctl -u geth.service -o cat -f
-systemctl status geth.service
 ```  
 
 Wait a few minutes and make sure geth is grabbing latest blocks. Sometimes you have to wait 15 minutes, kill it, and restart it before it begins syncing them.  
 
-If you have existing data files / keys, copy them into place now (.lpData, etc)   
 
-install systemd script   
+**Install systemd config for LivePeer**  
 ```  
-sudo cp <path to>/livepeer-transcoder.service /etc/systemd/system/
-sudo systemctl enable livepeer-transcoder    [or reenable]
-sudo systemctl start livepeer-transcoder
-tail /var/log/syslog
-# OR
-kill $(pgrep livepeer)
-# OR
-sudo systemctl restart livepeer
-# watch the logs
-sudo journalctl -u livepeer-transcoder.service -f
-sudo journalctl -u livepeer-transcoder.service -o cat -f
+??? If you have existing data files / keys, copy them into place now (.lpData, etc)   ??? 
+??? sudo cp <path to>/livepeer-transcoder.service /etc/systemd/system/
+sudo systemctl enable livepeer-transcoder    [or reenable if copying updated config]
+sudo systemctl start|stop|restart livepeer-transcoder
+# check status and watch the logs
 systemctl status livepeer-transcoder.service
+sudo journalctl -u livepeer-transcoder.service -f
 ```  
 
 
