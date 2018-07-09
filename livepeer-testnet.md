@@ -167,6 +167,21 @@ sudo systemctl start|stop|restart livepeer-transcoder
 systemctl status livepeer-transcoder.service
 sudo journalctl -u livepeer-transcoder.service -f
 ```  
+??? link: If you are going to use existing Ethereum accounts, go ahead and copy those into place in /d1/livepeer/.lpData/.  
+Run LivePeer manually for the initial run to make sure it can:  
+  * Connect to the local geth instance  
+  * Detect your existing Ethereum account / keys if they are in place OR  
+  * ??? Below needs link to security discussion  
+  * Create a new Ethereum account if necessary. For my installation, I created the initial account *without* a passphrase for operational reasons, taking into account all the security considerations discussed here. Your mileage may vary and my recommendation is to keep security as the top priority while adjusting for your own operational environment.  
+I am running LivePeer with the following params (as seen in the systemd unit config):  
+**Note:** This will run as a transcoder on **mainnet**, this is basically running live in production.  
+```
+/d1/livepeer/bin/livepeer -datadir /d1/livepeer/.lpData -ipfsPath /d1/livepeer -log_dir /d1/livepeer/logs -ethUrl ws://127.0.0.1:8546 -v 6 -initializeRound -transcoder -publicIP 35.173.105.24 -gasPrice 0
+```
+
+??? Now run from systemd  
+transfer ETH and LPT to node (small amount at first)  
+Now enroll as a transcoder  
 
 
 **Operational Notes**  
@@ -175,6 +190,10 @@ sudo journalctl -u livepeer-transcoder.service -f
   * You don't have enough ETH in your transcoder's account. You should monitor this and replenish as necessary.  
   * If gas prices spike, this can cause slowness and for transactions to fail, especially if you don't have enough funds (see above).  
   * Unable to communicate with the geth node - I've seen the local geth node appear to run fine and continue to stay sync'd to latest blocks and log that it's submitting transactions (such as calls to reward), but they fail silently and no errors or warnings are produced. LivePeer [issue #455](https://github.com/livepeer/go-livepeer/issues/455) documents a problem similar to this. In such cases, I've restarted first the geth node, waited for it to sync (a couple minutes at most), and then restarted the livepeer node. This is annoying enough to consider restarting geth automatically on a nightly (!) basis.  
+* What is the best way to backup the account / credentials tied to the node?  
+* How can you migrate your transcoder to different hardware but maintain the same transcoder account and ID?  
+* What livepeer / ipfs / etc logs needs to be rotated?  
+* Keep an eye on the LivePeer [Releases](https://github.com/livepeer/go-livepeer/releases) page for updates to the software, as well as the [discord](https://discord.gg/cBfD23u) and [forum](https://forum.livepeer.org/) discussions.  
 
 
 **LivePeer questions I had but was able to answer**  
@@ -182,17 +201,14 @@ sudo journalctl -u livepeer-transcoder.service -f
 * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
 * Is it ok to call `reward()` more than once per round? Yes, it will just say "reward already called for this round."  
 * Is it worth setting up a dedicated ipfs node in local network? Doesn't look like it's necessary at this time.  
-* Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? short answer: Not yet  
+* GPU - Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? short answer: Not yet  
   * Adding GPU Acceleration to transcoding is still an [open issue](https://github.com/livepeer/lpms/issues/33). 
   * GPU transcoding is not currently supported, according to Doug, "Currently we support deterministic CPU transcoding, but we're working on what you read in the above proposal to enable GPU transcoding in a way that will not disrupt GPU mining operations"  
   * In [issue #51 Transcoder Design](https://github.com/livepeer/lpms/issues/51#issuecomment-362502511), j0sh goes into a bit more depth on which areas may benefit from GPU    
   > There are some workloads in the transcoding pipeline that might benefit from GPU (such as colorspace conversion), but encoding generally benefits more from SIMD (AVX) or fixed function hardware (QuickSync). That being said, FFMpeg already supports the Intel MediaSync SDK which I believe is able to run certain operations on the (Intel?) GPU natively. I'm hoping that enabling MediaSync support is as simple as installing the library and setting the ffmpeg configure flag. We'd likely need run-time hardware detection as well.
   > GPUs might help more with verification, but it'd depend on the method we choose.   
   * See also the [Transcoder Design doc](https://github.com/livepeer/lpms/wiki/Transcoder-Design)  
-  * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184)   
-* What is the best way to backup the account / credentials tied to the node?  
-* How can you migrate your transcoder to different hardware but maintain the same transcoder account and ID?  
-* What livepeer / ipfs / etc logs needs to be rotated?  
+  * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184)    
 * What ports should be open? Open to the world?  
   * Video Ingest Endpoint - rtmp://localhost:1935  
   * livepeer_cli params: --http value local http port (default: "8935")  - this is a control port via http, I would make sure this is protected, can set configs here, bond(), etc.  
@@ -231,13 +247,6 @@ sudo journalctl -u livepeer-transcoder.service -f
       ```  
       such as `LastRewardRound` - the last round reward was called in. See [go-livepeer/server/webserver.go](https://github.com/livepeer/go-livepeer/blob/4589a1364fa9d29e9d196d259f1f235116d45953/server/webserver.go) for other functions you can call.  
       * Instead of decoding the contract input data could just string match since we know that the reward hex is "input":"0x228cb733", but it's a dirty hack.  
-* livepeer_cli params: --rtmp value local rtmp port (default: "1935")  
-  * Testnet vs mainnet  
-* Some of these could go into FAQ  
-* What's the .eth name service to translate from name -> eth address?  
-* How to import existing ETH account / keys? Maybe a [current bug](https://github.com/livepeer/go-livepeer/issues/304)  
-* Is there anything to backup? - if everything is on an attached EBS vol, just snapshot it I guess  
-* Guidelines on setting up basic monitoring / alerting  
 * Custom nagios or cloudwatch plugin (possible?) to do health check requests (maybe ELB?) and maybe check basic stats  
   * Go and systemd both support watchdog http://0pointer.de/blog/projects/watchdog.html  
   * Any admin interface available via network - http, etc? Or do you need to build an http request -> livepeer_cli  
@@ -263,11 +272,14 @@ sudo journalctl -u livepeer-transcoder.service -f
  
  
 * Gas: Doug says 10Gwei is a safe price - does that mean you’ll pay 10Gwei every time?? or that’s just max price  
+* How much ETH should you keep in your account?  
 * Capacity planning - how to estimate transcoding rate (how long to transcode each second of output video) based on machine resources?  
 
 **LivePeer open questions**  
 * How to know if you've been slashed?  
 * Specifying `-log_dir` on the command line only moved where the ipfs log file got written, `livepeer` still wrote its log to stderr.  
+* Is it possible to transfer LPT from a transcoder to another account without `unbonding()` the entire stake? Is this done via CLI option #11 "transfer" or can you unbond (a certain number) and then call "withdraw stake" on just that portion?  
+
 
 
 **Becoming an active transcoder on mainnet**  
