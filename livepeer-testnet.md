@@ -5,6 +5,8 @@
 * Decisions  
 platform - AWS, Linux, Ubuntu  
 instance size  
+why an elastic ip address  
+- better flexibility
 EBS Volumes - config and data concentration, separate from root disk, flexilibity - easily expandable, easily transferred to new instance (speed of recovery), easy to backup (EBS snapshots, easily automated)  
 process supervision - systemd  
 timekeeping - obviously important. In Ubuntu 18.04, the base system uses systemd-timesyncd which may be fine, but may want to consider using chrony for better accuracy and syncing **(grab links from below).**  
@@ -15,8 +17,58 @@ Security
   * What are implications of no password? For backing up files, for security of account in general, etc?  
   * Could just do it via command-line, but don't really want it to be visible to 'ps'  
   * Would prefer at least a config file if nothing else ... 
-
-
+* Ports - all locked down, closed to the world and the local network except 4433, as required by [upcoming network updates](https://forum.livepeer.org/t/upcoming-networking-upgrades/298) which I think has to be open to the world.
+  * Note that ssh is also closed to the world and, in our setup, only accessible through an ssh bastion host.  
+* No root logins, auth via ssh keys only, keep security patches up-to-date, backup regularly and automatically, monitor your boxes, regularly audit and rotate authorized ssh keys, AWS IAM permissions, sudo access, don't allow access via root AWS ssh keys, encourage audit trails via access via username-accounts (vs system accounts such as "ubuntu"), etc.  
+  * [Publish metrics to CloudWatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html)?  
+    * Maybe with [custom events](https://aws.amazon.com/blogs/security/how-to-use-amazon-cloudwatch-events-to-monitor-application-health/)?  
+    * https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-cw.html  
+    * Monitor and document that reward() is called daily, publish to public cloudwatch dashboard? How to monitor?  
+    * Easiest approach is by querying the local livepeer node via http but safest to make sure tx actually happened is to check the Ethereum blockchain
+    * Can check if reward() was called by watching the latest transactions from the transcoder's account, either via the [etherscan API](https://etherscan.io/apis)
+    * Can do the same thing by querying the local geth node -
+      * Via geth console - but need to do this via API, maybe web3
+      This tx was a call to reward()
+      ```
+      geth attach /d2/geth-data/.ethereum/geth.ipc
+      > eth.getTransaction("0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f")
+      > eth.getTransactionReceipt("0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f")
+      ```
+      * or via geth's [web3 javascript api](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgettransaction) for communicating with an ethereum node from inside a javascript application  
+      * Or use the [JSON-RPC api](https://github.com/ethereum/wiki/wiki/JSON-RPC) directly. These docs include [curl examples](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactionbyhash):
+      ```
+      curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionByHash","params":["0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f"],"id":1}' http://localhost:8545  
+      ```
+      but there's not an easy way to list recent transactions for an account or contract ... looks like filters/logs are the way to do this? https://github.com/ethereum/go-ethereum/issues/1897  or here https://github.com/ethereum/go-ethereum/issues/2104  
+      * But would still need to decode the `input` param and translate it to the function name. According to the [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI), "the first four bytes of the call data for a function call specifies the function to be called. It is the first (left, high-order in big-endian) four bytes of the Keccak (SHA-3) hash of the signature of the function."   
+        * GitHub: [ConsenSys ABI decoder](https://github.com/ConsenSys/abi-decoder) project    
+        * GitHub: [Ethereum tx input data decoder project](https://github.com/miguelmota/ethereum-input-data-decoder)  
+        * GitHub: [Decoder and encoder for the Ethereum ABI](https://github.com/ethereumjs/ethereumjs-abi)  
+        * GitHub: [python eth abi](https://github.com/ethereum/eth-abi) project with input decoding [example on stackexchange](https://ethereum.stackexchange.com/questions/6297/python-eth-getfilterchanges-data-how-to-decode)  
+      * The LivePeer process also makes an http api available, so it's possible to ask it for transcoder stats:  
+      ```
+      $ curl http://127.0.0.1:8935/transcoderInfo
+      {"Address":"0x50d69f8253685999b4c74a67ccb3d240e2a56ed6","LastRewardRound":1018,"RewardCut":30000,"FeeShare":300000,"PricePerSegment":150000000000,"PendingRewardCut":30000,"PendingFeeShare":300000,"PendingPricePerSegment":150000000000,"DelegatedStake":6454553077282307328907,"Active":true,"Status":"Registered"}
+      ```  
+      such as `LastRewardRound` - the last round reward was called in. See [go-livepeer/server/webserver.go](https://github.com/livepeer/go-livepeer/blob/4589a1364fa9d29e9d196d259f1f235116d45953/server/webserver.go) for other functions you can call.  
+      * Instead of decoding the contract input data could just string match since we know that the reward hex is "input":"0x228cb733", but it's a dirty hack.  
+* Custom nagios or cloudwatch plugin (possible?) to do health check requests (maybe ELB?) and maybe check basic stats  
+  * Go and systemd both support watchdog http://0pointer.de/blog/projects/watchdog.html  
+* Securing your node and access to private ETH key  
+  * Tradeoffs, hacks, etc.  
+  * Storing private key in [AWS Parameter Store](https://aws.amazon.com/systems-manager/features/#Parameter_Store) in AWS [Key Management Service](https://aws.amazon.com/kms/)?  
+  * [Getting started with AWS Parameter store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-paramstore.html) see also How AWS [Systems Manager Parameter Store Uses AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/services-parameter-store.html?shortFooter=true)  
+  * goog: [golang example aws kms](https://www.google.com/search?biw=1295&bih=1103&ei=N30yW4aHJ8vxzgLp1J-gBw&q=golang+example+aws+kms&oq=golang+example+aws+kms&gs_l=psy-ab.3..33i22i29i30k1.231231.237437.0.238301.22.17.0.4.4.0.305.1360.3j7j0j1.11.0....0...1c.1.64.psy-ab..8.14.1249...0j0i67k1j0i131i67k1j0i131k1j0i22i30k1.0.7Ap2nvkZiVw)  
+  * It's just that the ethereum client doesn't seem to have the capability to get the account key over the network or from anything other than a file https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go  
+* Running a local geth node would definitely be helpful
+  * Although it's not 100% clear in the docs - official docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. I know that it's not required but I think it's clearly beneficial, eg:  
+  * "If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network."  
+  * How to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url") from [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go#L83)  
+  * You can specify a local geth node on the command line via `-ethDatadir` flag when starting the node. The directory specified should contain the ipc file for the Geth node, from https://github.com/livepeer/wiki/wiki/Livepeer-Node   
+  * See this post for running a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
+  * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
+  * My preference is to run it on a dedicated local node (not the transcoder)  
+  * Is it really ok to run geth light client vs fast-sync (or full node)?  
 
 
 The goal is to run robust infrastructure for the LivePeer transcoding network. I care about  
@@ -197,7 +249,7 @@ Now enroll as a transcoder
 
 
 **LivePeer questions I had but was able to answer**  
-* **Note** Don't forget the [upcoming networking updates!](https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go)  
+* **Note** Don't forget the [upcoming networking updates!](https://forum.livepeer.org/t/upcoming-networking-upgrades/298)  
 * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
 * Is it ok to call `reward()` more than once per round? Yes, it will just say "reward already called for this round."  
 * Is it worth setting up a dedicated ipfs node in local network? Doesn't look like it's necessary at this time.  
@@ -206,79 +258,24 @@ Now enroll as a transcoder
   * GPU transcoding is not currently supported, according to Doug, "Currently we support deterministic CPU transcoding, but we're working on what you read in the above proposal to enable GPU transcoding in a way that will not disrupt GPU mining operations"  
   * In [issue #51 Transcoder Design](https://github.com/livepeer/lpms/issues/51#issuecomment-362502511), j0sh goes into a bit more depth on which areas may benefit from GPU    
   > There are some workloads in the transcoding pipeline that might benefit from GPU (such as colorspace conversion), but encoding generally benefits more from SIMD (AVX) or fixed function hardware (QuickSync). That being said, FFMpeg already supports the Intel MediaSync SDK which I believe is able to run certain operations on the (Intel?) GPU natively. I'm hoping that enabling MediaSync support is as simple as installing the library and setting the ffmpeg configure flag. We'd likely need run-time hardware detection as well.
-  > GPUs might help more with verification, but it'd depend on the method we choose.   
+  > GPU's might help more with verification, but it'd depend on the method we choose.   
   * See also the [Transcoder Design doc](https://github.com/livepeer/lpms/wiki/Transcoder-Design)  
   * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184)    
-* What ports should be open? Open to the world?  
-  * Video Ingest Endpoint - rtmp://localhost:1935  
-  * livepeer_cli params: --http value local http port (default: "8935")  - this is a control port via http, I would make sure this is protected, can set configs here, bond(), etc.  
-* yep, this is the port to poll to track status and info. Available commands are documented in [webserver.go](https://github.com/livepeer/go-livepeer/blob/ec288f43b60fbf3bd61f81b636538b5b004aaa86/server/webserver.go)  
-* Seems like it can send server metrics to http://viz.livepeer.org:8081/metrics ? see [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go) interesting that it can end metrics by default, wonder if that can be redirected and to what kind of server. you can also specify the monitor host to send to  
-  * Maybe to the monitor server here? https://github.com/livepeer/go-livepeer/blob/master/monitor/monitor.go  
-  * Looks like there's a separate monitor server project https://github.com/livepeer/streamingviz  ... although it hasn't been touched in a year  
-  * Or publish them to CloudWatch? https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html  
-    * Maybe with [custom events](https://aws.amazon.com/blogs/security/how-to-use-amazon-cloudwatch-events-to-monitor-application-health/)?  
-    * https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-cw.html  
-    * Monitor and document that reward() is called daily, publish to public cloudwatch dashboard? How to monitor?  
-    * Can check if reward() was called by watching the latest transactions from the transcoder's account, either via the [etherscan API](https://etherscan.io/apis)
-    * Can do the same thing by querying the local geth node -
-      * Via geth console - but need to do this via API, maybe web3
-      This tx was a call to reward()
-      ```
-      geth attach /d2/geth-data/.ethereum/geth.ipc
-      > eth.getTransaction("0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f")
-      > eth.getTransactionReceipt("0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f")
-      ```
-      * or via geth's [web3 javascript api](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgettransaction) for communicating with an ethereum node from inside a javascript application  
-      * Or use the [JSON-RPC api](https://github.com/ethereum/wiki/wiki/JSON-RPC) directly. These docs include [curl examples](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactionbyhash):
-      ```
-      curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionByHash","params":["0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f"],"id":1}' http://localhost:8545  
-      ```
-      but there's not an easy way to list recent transactions for an account or contract ... looks like filters/logs are the way to do this? https://github.com/ethereum/go-ethereum/issues/1897  or here https://github.com/ethereum/go-ethereum/issues/2104  
-      * But still need to decode the `input` param and translate it to the function name. According to the [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI), "the first four bytes of the call data for a function call specifies the function to be called. It is the first (left, high-order in big-endian) four bytes of the Keccak (SHA-3) hash of the signature of the function."   
-        * GitHub: [ConsenSys ABI decoder](https://github.com/ConsenSys/abi-decoder) project    
-        * GitHub: [Ethereum tx input data decoder project](https://github.com/miguelmota/ethereum-input-data-decoder)  
-        * GitHub: [Decoder and encoder for the Ethereum ABI](https://github.com/ethereumjs/ethereumjs-abi)  
-        * GitHub: [python eth abi](https://github.com/ethereum/eth-abi) project with input decoding [example on stackexchange](https://ethereum.stackexchange.com/questions/6297/python-eth-getfilterchanges-data-how-to-decode)  
-      * The LivePeer process also makes an http api available, so it's possible to ask it for transcoder stats:  
-      ```
-      $ curl http://127.0.0.1:8935/transcoderInfo
-      {"Address":"0x50d69f8253685999b4c74a67ccb3d240e2a56ed6","LastRewardRound":1018,"RewardCut":30000,"FeeShare":300000,"PricePerSegment":150000000000,"PendingRewardCut":30000,"PendingFeeShare":300000,"PendingPricePerSegment":150000000000,"DelegatedStake":6454553077282307328907,"Active":true,"Status":"Registered"}
-      ```  
-      such as `LastRewardRound` - the last round reward was called in. See [go-livepeer/server/webserver.go](https://github.com/livepeer/go-livepeer/blob/4589a1364fa9d29e9d196d259f1f235116d45953/server/webserver.go) for other functions you can call.  
-      * Instead of decoding the contract input data could just string match since we know that the reward hex is "input":"0x228cb733", but it's a dirty hack.  
-* Custom nagios or cloudwatch plugin (possible?) to do health check requests (maybe ELB?) and maybe check basic stats  
-  * Go and systemd both support watchdog http://0pointer.de/blog/projects/watchdog.html  
-  * Any admin interface available via network - http, etc? Or do you need to build an http request -> livepeer_cli  
-* Securing your node and access to private ETH key  
-  * Tradeoffs, hacks, etc.  
-  * Storing private key in [AWS Parameter Store](https://aws.amazon.com/systems-manager/features/#Parameter_Store) in AWS [Key Management Service](https://aws.amazon.com/kms/)?  
-  * [Getting started with AWS Parameter store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-paramstore.html) see also How AWS [Systems Manager Parameter Store Uses AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/services-parameter-store.html?shortFooter=true)  
-  * goog: [golang example aws kms](https://www.google.com/search?biw=1295&bih=1103&ei=N30yW4aHJ8vxzgLp1J-gBw&q=golang+example+aws+kms&oq=golang+example+aws+kms&gs_l=psy-ab.3..33i22i29i30k1.231231.237437.0.238301.22.17.0.4.4.0.305.1360.3j7j0j1.11.0....0...1c.1.64.psy-ab..8.14.1249...0j0i67k1j0i131i67k1j0i131k1j0i22i30k1.0.7Ap2nvkZiVw)  
-  * It's just that the ethereum client doesn't seem to have the capability to get the account key over the network or from anything other than a file https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go  
-* Running a local geth node would definitely be helpful
-  * Although it's not 100% clear in the docs - official docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. I know that it's not required but I think it's clearly beneficial, eg:  
-  * "If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network."  
-  * How to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url") from [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go#L83)  
-  * You can specify a local geth node on the command line via `-ethDatadir` flag when starting the node. The directory specified should contain the ipc file for the Geth node, from https://github.com/livepeer/wiki/wiki/Livepeer-Node   
-  * See this post for running a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
-  * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
-  * My preference is to run it on a dedicated local node (not the transcoder)  
-  * Is it really ok to run geth light client vs fast-sync (or full node)?  
-* Unclear from docs: needs ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
+  * When GPU's can be meaningfully helpful, [P2 GPU instances](https://aws.amazon.com/ec2/instance-types/p2/) are one (very expensive) option, or [Elastic GPUs](https://aws.amazon.com/ec2/elastic-gpus/details/), which can be attached to certain instance types.  
 * What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
-  * I guess the identity is just the eth address of the account, so as long as you migrate that to a new machine it should be fine  
-* How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?  
- 
- 
-* Gas: Doug says 10Gwei is a safe price - does that mean you’ll pay 10Gwei every time?? or that’s just max price  
-* How much ETH should you keep in your account?  
-* Capacity planning - how to estimate transcoding rate (how long to transcode each second of output video) based on machine resources?  
+  * I guess the identity is just the eth address of the account, so as long as you migrate that to a new machine it should be fine    
+
 
 **LivePeer open questions**  
 * How to know if you've been slashed?  
 * Specifying `-log_dir` on the command line only moved where the ipfs log file got written, `livepeer` still wrote its log to stderr.  
 * Is it possible to transfer LPT from a transcoder to another account without `unbonding()` the entire stake? Is this done via CLI option #11 "transfer" or can you unbond (a certain number) and then call "withdraw stake" on just that portion?  
+* What ports should be open to internal network? Open to the world?  
+* Gas: Doug says 10Gwei is a safe price - does that mean you’ll pay 10Gwei every time?? or that’s just max price  
+* How much ETH should you keep in your account?  
+* Capacity planning - how to estimate transcoding rate (how long to transcode each second of output video) based on machine resources?  
+* Unclear from docs: needs ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
+* How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?   
 
 
 
@@ -295,7 +292,7 @@ Now enroll as a transcoder
 
 
 **Future Architecture Directions**    
-  * For GPU capabilities, consider [P2 GPU instances](https://aws.amazon.com/ec2/instance-types/p2/) (crazy expensive) and [Elastic GPUs](https://aws.amazon.com/ec2/elastic-gpus/details/) which can be attached to certain instance types.   
+  
 
 
 **Reference**   
@@ -330,3 +327,10 @@ Now enroll as a transcoder
 - Log rotation for LivePeer and geth logs    
 - Helpful to give the instance an DNS and/or ENS name?  
 - Better documentation of AWS Security groups, IAM users and permissions, ssh gateway host, etc  
+
+
+**Notes to move elsewhere**  
+* yep, this is the port to poll to track status and info. Available commands are documented in [webserver.go](https://github.com/livepeer/go-livepeer/blob/ec288f43b60fbf3bd61f81b636538b5b004aaa86/server/webserver.go)  
+* Seems like it can send server metrics to http://viz.livepeer.org:8081/metrics ? see [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go) interesting that it can end metrics by default, wonder if that can be redirected and to what kind of server. you can also specify the monitor host to send to  
+  * Maybe to the monitor server here? https://github.com/livepeer/go-livepeer/blob/master/monitor/monitor.go  
+  * Looks like there's a separate monitor server project https://github.com/livepeer/streamingviz  ... although it hasn't been touched in a year  
