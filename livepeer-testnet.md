@@ -283,26 +283,25 @@ sudo journalctl -u livepeer-transcoder.service -f
   * Master reference docs and info is aggregated in this thread - [Transcoder Megathread - Start here to learn about playing the role of transcoder on Livepeer](https://forum.livepeer.org/t/transcoder-megathread-start-here-to-learn-about-playing-the-role-of-transcoder-on-livepeer/190)   
 
 **OPs TODO**  
-testing  
-
-  - monitoring  
-  - alerting  
-  - metrics collection  
-  - health checks  
-  - load balancing  
-  - automatic failover  
-  - regional routing  
-  - auto-scaling  
-  - configuration management  
-  - automated deployment  
-  - better security  
-  - sophisticated key management  
-  - automate EBS snapshots  
-  - EBS Volumes encrypted by default?  
-  - Log rotation for LivePeer and geth logs  
-  - monitor and alert if reward() doesn't get called  
-  - Dockerize
-  - Possibly using Hashicorp's Vault for private keys or AWS KMS  
-  - Helpful to give the instance an DNS and/or ENS name?  
-  - Use [AWS Launch Templates](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html)?  
-  - Better documentation of AWS Security groups, IAM users and permissions, ssh gateway host, etc  
+- Configuration  
+  - Use actual config management  
+  - Testing  
+  - Automated deployment  
+  - Docker?  
+- Traffic management  
+  - Load balancing  
+  - Automatic failover  
+  - Regional routing  
+  - Auto-scaling  
+- Monitoring, Alerting, Metrics Collection  
+  - Health checks of LivePeer instance  
+  - Monitor and alert if reward() doesn't get called
+- Security  
+  - Better management of Ethereum private keys  
+  - Possibly using Hashicorp's Vault for private keys or AWS KMS   
+- EBS Volumes
+  - Automate EBS snapshots  
+  - Encrypt EBS Volumes by default?  
+- Log rotation for LivePeer and geth logs    
+- Helpful to give the instance an DNS and/or ENS name?  
+- Better documentation of AWS Security groups, IAM users and permissions, ssh gateway host, etc  
