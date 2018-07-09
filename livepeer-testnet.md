@@ -1,30 +1,6 @@
 ## Running a LivePeer transcoder   
 * Goals  
-* Future Architecture Directions  
-* OPs TODO:    
-  - testing  
-  - monitoring  
-  - alerting  
-  - metrics collection  
-  - health checks  
-  - load balancing  
-  - automatic failover  
-  - regional routing  
-  - auto-scaling  
-  - configuration management  
-  - automated deployment  
-  - better security  
-  - sophisticated key management  
-  - automate EBS snapshots  
-  - EBS Volumes encrypted by default?  
-  - Log rotation for LivePeer and geth logs  
-  - monitor and alert if reward() doesn't get called  
-  - Dockerize
-  - Possibly using Hashicorp's Vault for private keys or AWS KMS  
-  - Helpful to give the instance an DNS and/or ENS name?  
-  - Use [AWS Launch Templates](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html)?  
-  - Better documentation of AWS Security groups, IAM users and permissions, ssh gateway host, etc  
-  
+* Future Architecture Directions (see OPs TODO)  
 * Config is code  
 * Decisions  
 platform - AWS, Linux, Ubuntu  
@@ -186,30 +162,6 @@ sudo journalctl -u livepeer-transcoder.service -f
 ```  
 
 
-**Ops TODO**  
-  * Automate snapshots  
-  * systemd: turn restart rate limiting back on and attach to a notifier https://serverfault.com/questions/694818/get-notification-when-systemd-monitored-service-enters-failed-state  
-  * Dedicated EBS Volume - should maybe be encrypted if key is stored there ...  
-  * If boot vol is also EBS then can relaunch different instance types on same boot vol, what AWS calls [instance resizing](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-resize.html)  
-  * Set up a [public elastic ip](https://docs.aws.amazon.com/cli/latest/reference/ec2/run-instances.html) and document and operationalize  
-  * Raise filehandle limit  https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170 and [see my own notes](https://gist.github.com/alexlines/dc870ce77cbd754ee6aca67898cafa10) and document and operationalize        
-    * Process supervisor to keep livepeer running (or restart periodically) - systemd, etc.    
-  * Make sure timesync is active. In 18.04, base system uses [systemd-timesyncd](https://www.freedesktop.org/software/systemd/man/timedatectl.html) which may be fine, but probably want to use chrony for better accuracy and syncing.  
-   * Some [Chrony](https://chrony.tuxfamily.org/) links: [FAQ](https://chrony.tuxfamily.org/faq.html), also [Time Sync](https://help.ubuntu.com/lts/serverguide/NTP.html) in Ubuntu, and a [basic chrony config overview](https://blog.ubuntu.com/2018/04/09/ubuntu-bionic-using-chrony-to-configure-ntp).  
-  * Run LP on a dedicated attached EBS vol, not the default root vol ...  
-  * [Log rotation?](https://www.digitalocean.com/community/tutorials/how-to-manage-logfiles-with-logrotate-on-ubuntu-16-04)   
-  * Oh, so livepeerjs is the main official API (via RPC)? Kindof missed that https://github.com/livepeer/livepeerjs/tree/master/packages/sdk ... oh, so it's for interacting with LP smart contracts, sot it doesn't expose reward(), but maybe could use to monitor whether transcoder x has successfully called reward() this round? I wonder if you could also just call it via mycrypto? doesn't look like reward is exposed via the ABI that doug sent us. Can definitely use it to get info about a specific transcoder with `getTranscoder('0xf00...')` can also use it to set transcoder parameters, which is useful, but strange you can't call reward?  
-  * Making sure that `reward()` gets called is a priority  
-  * Maybe just use ELB's for health checks (not sure about classic ELB vs ALB yet)  
-    * https://www.sumologic.com/aws/elb/aws-elastic-load-balancers-classic-vs-application/  
-    * https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html   
-  * [Dockerize?](https://github.com/livepeer/docker-livepeer)  
-  * What about using [vault](https://www.hashicorp.com/blog/using-vault-to-build-an-ethereum-wallet) or something for private keys?  
-  * DNS name?  
-  * ENS name?  
-  * Maybe would be better to use [AWS Launch Templates](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html), maybe will revisit  
-  * Should also create custom IAM users and permissions ...  
-  * Documentation could include creation of custom security groups, ssh key, and maybe gateway host  
 
 
 **LivePeer questions**  
@@ -327,7 +279,30 @@ sudo journalctl -u livepeer-transcoder.service -f
   * For GPU capabilities, consider [P2 GPU instances](https://aws.amazon.com/ec2/instance-types/p2/) (crazy expensive) and [Elastic GPUs](https://aws.amazon.com/ec2/elastic-gpus/details/) which can be attached to certain instance types.   
 
 
-**Reference:**   
+**Reference**   
   * Master reference docs and info is aggregated in this thread - [Transcoder Megathread - Start here to learn about playing the role of transcoder on Livepeer](https://forum.livepeer.org/t/transcoder-megathread-start-here-to-learn-about-playing-the-role-of-transcoder-on-livepeer/190)   
 
-  
+**OPs TODO**  
+testing  
+
+  - monitoring  
+  - alerting  
+  - metrics collection  
+  - health checks  
+  - load balancing  
+  - automatic failover  
+  - regional routing  
+  - auto-scaling  
+  - configuration management  
+  - automated deployment  
+  - better security  
+  - sophisticated key management  
+  - automate EBS snapshots  
+  - EBS Volumes encrypted by default?  
+  - Log rotation for LivePeer and geth logs  
+  - monitor and alert if reward() doesn't get called  
+  - Dockerize
+  - Possibly using Hashicorp's Vault for private keys or AWS KMS  
+  - Helpful to give the instance an DNS and/or ENS name?  
+  - Use [AWS Launch Templates](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html)?  
+  - Better documentation of AWS Security groups, IAM users and permissions, ssh gateway host, etc  
