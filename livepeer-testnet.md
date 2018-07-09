@@ -164,7 +164,7 @@ sudo journalctl -u livepeer-transcoder.service -f
 
 
 **Operational Notes**  
-* Running with `initializeRound` can get expensive when gas is high (I've seen ~$40)  
+* Running with `initiliazeRound` is a nice thing to do - the round can't start until somebody calls it and `reward()` cannot be called until the round has been started. Running with `initializeRound` can get expensive when gas is high (I've seen ~$40)  
 * Making sure `reward()` gets called everyday is the most important thing right now, after making sure everything is up and running. This generally succeeds, but, in the absence of rock-solid monitoring and alerting on this event, you should manually check it every day. Go set a reminder in your calendar to check it every day at 4pm. While you're there, set another reminder at 9pm. If the call hasn't succeeded for the day, use the command line interface to call `reward()` manually. Some reasons I've seen that can cause it to fail:  
   * You don't have enough ETH in your transcoder's account. You should monitor this and replenish as necessary.  
   * If gas prices spike, this can cause slowness and for transactions to fail, especially if you don't have enough funds (see above).  
@@ -176,7 +176,6 @@ sudo journalctl -u livepeer-transcoder.service -f
 * The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
 * Is it ok to call `reward()` more than once per round? Yes, it will just say "reward already called for this round."  
 * Is it worth setting up a dedicated ipfs node in local network? Doesn't look like it's necessary at this time.  
-
 * Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? short answer: Not yet  
   * Adding GPU Acceleration to transcoding is still an [open issue](https://github.com/livepeer/lpms/issues/33). 
   * GPU transcoding is not currently supported, according to Doug, "Currently we support deterministic CPU transcoding, but we're working on what you read in the above proposal to enable GPU transcoding in a way that will not disrupt GPU mining operations"  
@@ -185,9 +184,9 @@ sudo journalctl -u livepeer-transcoder.service -f
   > GPUs might help more with verification, but it'd depend on the method we choose.   
   * See also the [Transcoder Design doc](https://github.com/livepeer/lpms/wiki/Transcoder-Design)  
   * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184)   
-* Best way to backup the account / credentials tied to the node?  
+* What is the best way to backup the account / credentials tied to the node?  
+* How can you migrate your transcoder to different hardware but maintain the same transcoder account and ID?  
 * What livepeer / ipfs / etc logs needs to be rotated?  
-* Nice to have: Make sure `initializeRound()` has been called - cannot call `reward()` until it has  
 * What ports should be open? Open to the world?  
   * Video Ingest Endpoint - rtmp://localhost:1935  
   * livepeer_cli params: --http value local http port (default: "8935")  - this is a control port via http, I would make sure this is protected, can set configs here, bond(), etc.  
@@ -305,6 +304,7 @@ sudo journalctl -u livepeer-transcoder.service -f
 - EBS Volumes
   - Automate EBS snapshots  
   - Encrypt EBS Volumes by default?  
+- Add GPU's, optionally  
 - Local geth node  
   - Would it benefit from being a fast-sync node or a full node?  
   - Should probably move geth to a dedicated instance that multiple local transcoder nodes can connect to  
