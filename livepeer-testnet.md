@@ -18,7 +18,7 @@ Security
   * Could just do it via command-line, but don't really want it to be visible to 'ps'  
   * Would prefer at least a config file if nothing else ... 
 * Ports - all locked down, closed to the world and the local network except 4433, as required by [upcoming network updates](https://forum.livepeer.org/t/upcoming-networking-upgrades/298) which I think has to be open to the world.
-  * Note that ssh is also closed to the world and, in our setup, only accessible through an ssh bastion host.  
+  * Note that ssh is also closed to the world and, in our setup, only accessible through an ssh bastion host which runs ssh on a non-standard port and is locked down except to specific, known IPs.    
 * No root logins, auth via ssh keys only, keep security patches up-to-date, review all running procs and open ports, shut down (permanently) all unnecessary ones, make sure you have 2FA enable for your AWS account, backup regularly and automatically, monitor your boxes, regularly audit and rotate authorized ssh keys, AWS IAM permissions, sudo access, don't allow access via root AWS ssh keys, encourage audit trails via access via username-accounts (vs system accounts such as "ubuntu"), etc.  
   * [Publish metrics to CloudWatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html)?  
     * Maybe with [custom events](https://aws.amazon.com/blogs/security/how-to-use-amazon-cloudwatch-events-to-monitor-application-health/)?  
