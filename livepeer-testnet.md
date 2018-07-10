@@ -189,27 +189,28 @@ to confirm the limit has been raised.
 **Install geth and run in light mode**  
 geth systemd stuff  
 Is a geth config file possible?  
-Still need to periodically kill it ...  
+??? Still need to periodically kill it ...  
 ```
 sudo apt-get install -y software-properties-common
 sudo add-apt-repository -y ppa:ethereum/ethereum
 sudo apt-get update
 sudo apt-get install -y ethereum  
 ```
-geth data and logs will all live on a dedicated EBS volume (but not binaries, those get installed in default locations via apt-get install) under /d2/ for easy backups via snapshots and to easily attach to a new instance.  Run geth via systemd.  
+geth data, logs, and any keys (but not binaries, those get installed in default locations via apt-get install) will all live on a dedicated EBS volume under /d2/ for easy backups via snapshots and to easily attach to a new instance.  
+Setup geth data directories on the attached EBS volume and copy systemd unit file into place:  
 ```
 sudo mkdir /d2/geth-data
 sudo chown -R ubuntu:ubuntu /d2/geth-data
-cd /d2/geth-data
-
-# make sure existing .ethereum files are in place now, depends on /d2/geth-data/.ethereum  
-# via systemd
-sudo cp /d1/livepeer-transcoder-ops/geth/private/config/systemd ??? maybe /geth.service /etc/systemd/system/
-sudo systemctl enable geth    [or reenable]
+??? filepath sudo cp /d1/livepeer-transcoder-ops/geth/private/config/systemd ??? maybe /geth.service /etc/systemd/system/
+```
+If you plan to use existing .ethereum files or keys, copy them into place now in `/d2/geth-data/.ethereum`  
+start geth via systemd and watch the logs:
+```
+sudo systemctl enable geth    [or 'reenable' if you're overwriting existing config file]
 sudo systemctl start|stop|restart geth
 
 # check the status and logs
-sudo systemctl status geth ??? correct?
+sudo systemctl status geth
 sudo journalctl -u geth.service -f
 ```  
 
