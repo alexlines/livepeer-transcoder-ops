@@ -19,7 +19,7 @@ Security
   * Would prefer at least a config file if nothing else ... 
 * Ports - all locked down, closed to the world and the local network except 4433, as required by [upcoming network updates](https://forum.livepeer.org/t/upcoming-networking-upgrades/298) which I think has to be open to the world.
   * Note that ssh is also closed to the world and, in our setup, only accessible through an ssh bastion host.  
-* No root logins, auth via ssh keys only, keep security patches up-to-date, backup regularly and automatically, monitor your boxes, regularly audit and rotate authorized ssh keys, AWS IAM permissions, sudo access, don't allow access via root AWS ssh keys, encourage audit trails via access via username-accounts (vs system accounts such as "ubuntu"), etc.  
+* No root logins, auth via ssh keys only, keep security patches up-to-date, review all running procs and open ports, shut down (permanently) all unnecessary ones, make sure you have 2FA enable for your AWS account, backup regularly and automatically, monitor your boxes, regularly audit and rotate authorized ssh keys, AWS IAM permissions, sudo access, don't allow access via root AWS ssh keys, encourage audit trails via access via username-accounts (vs system accounts such as "ubuntu"), etc.  
   * [Publish metrics to CloudWatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html)?  
     * Maybe with [custom events](https://aws.amazon.com/blogs/security/how-to-use-amazon-cloudwatch-events-to-monitor-application-health/)?  
     * https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-cw.html  
@@ -145,6 +145,13 @@ echo "UUID=<volume UUID> /d2 ext4 defaults 0 2" | sudo tee -a /etc/fstab
 sudo mount /dev/xvdh /d2   
 ```  
 
+**Set the hostname**  
+```
+hostname tc001.mydomain.com
+# add to /etc/hosts
+# replace contents of /etc/hostname (with only hostname, not FQDN)
+```
+
 
 **Filesystem operations**   
 For this setup, All LivePeer-specific files (binaries, logs, ethereum accounts, keys, etc) live on a dedicated EBS volume under /d1. The EBS volume can be backed-up via EBS snapshots and easily attached to a new instance if necessary.  
@@ -264,6 +271,7 @@ Now enroll as a transcoder
   * When GPU's can be meaningfully helpful, [P2 GPU instances](https://aws.amazon.com/ec2/instance-types/p2/) are one (very expensive) option, or [Elastic GPUs](https://aws.amazon.com/ec2/elastic-gpus/details/), which can be attached to certain instance types.  
 * What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
   * I guess the identity is just the eth address of the account, so as long as you migrate that to a new machine it should be fine    
+* Difference between reward, stake, pending stake, etc. 
 
 
 **LivePeer open questions**  
