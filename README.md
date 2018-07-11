@@ -66,7 +66,7 @@ There is much room for improvement. See below for some specific areas of known t
 I want to be sure this transcoder can perform, so for the initial phase I've overprovisioned the resources of CPU, RAM, disk performance, and bandwidth (details below). This means this specific configuration is expensive so feel free to choose lower-resource instance types.  
 
 
-You can use the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with these characteristics using [this configuration file](https://gist.github.com/alexlines/f8a83c4705755b74e7592e686a4832e9) as follows:  
+You can use the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with these characteristics using [this configuration file](https://github.com/alexlines/livepeer-transcoder-ops/blob/master/private/config/aws-instances/livepeer-transcoder-ec2-config.json) as follows:  
 **Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You can [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have (which just allow ssh from certain sources), a private key of a different name, and has "DryRun" set to true (change to false to actually launch an instance), so adjust accordingly.   
 
 Launch the instance  
@@ -134,6 +134,8 @@ For this setup, All LivePeer-specific files (binaries, logs, ethereum accounts, 
 sudo mkdir -p /d1/livepeer/logs  
 sudo mv -i livepeer_linux /d1/livepeer/bin  
 sudo chown -R ubuntu:ubuntu /d1/livepeer  
+cd /d1
+git clone git@github.com:alexlines/livepeer-transcoder-ops.git
 ```  
 
 **Raise open filehandle limits**   
@@ -176,7 +178,7 @@ Setup geth data directories on the attached EBS volume and copy systemd unit fil
 ```
 sudo mkdir /d2/geth-data
 sudo chown -R ubuntu:ubuntu /d2/geth-data
-??? filepath sudo cp /d1/livepeer-transcoder-ops/geth/private/config/systemd ??? maybe /geth.service /etc/systemd/system/
+sudo cp /d1/livepeer-transcoder-ops/private/config/geth/systemd/geth.service /etc/systemd/system/
 ```
 If you plan to use existing .ethereum files or keys, copy them into place now in `/d2/geth-data/.ethereum`  
 start geth via systemd and watch the logs:
@@ -195,7 +197,7 @@ Wait a few minutes and make sure geth is grabbing latest blocks. Sometimes you h
 **Install systemd config for LivePeer**  
 ```  
 ??? If you have existing data files / keys, copy them into place now (.lpData, etc)   ??? 
-??? sudo cp <path to>/livepeer-transcoder.service /etc/systemd/system/
+sudo cp /d1/livepeer-transcoder-ops/private/config/livepeer/systemd/livepeer-transcoder.service /etc/systemd/system/
 sudo systemctl enable livepeer-transcoder    [or reenable if copying updated config]
 sudo systemctl start|stop|restart livepeer-transcoder
 # check status and watch the logs
