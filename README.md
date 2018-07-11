@@ -19,41 +19,7 @@ Security
   * Would prefer at least a config file if nothing else ... 
 * Ports - all locked down, closed to the world and the local network except 4433, as required by [upcoming network updates](https://forum.livepeer.org/t/upcoming-networking-upgrades/298) which I think has to be open to the world.
   * Note that ssh is also closed to the world and, in our setup, only accessible through an ssh bastion host which runs ssh on a non-standard port and is locked down except to specific, known IPs.    
-* No root logins, auth via ssh keys only, keep security patches up-to-date, review all running procs and open ports, shut down (permanently) all unnecessary ones, make sure you have 2FA enable for your AWS account, backup regularly and automatically, monitor your boxes, regularly audit and rotate authorized ssh keys, AWS IAM permissions, sudo access, don't allow access via root AWS ssh keys, encourage audit trails via access via username-accounts (vs system accounts such as "ubuntu"), etc.  
-  * [Publish metrics to CloudWatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html)?  
-    * Maybe with [custom events](https://aws.amazon.com/blogs/security/how-to-use-amazon-cloudwatch-events-to-monitor-application-health/)?  
-    * https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/customize-containers-cw.html  
-    * Monitor and document that reward() is called daily, publish to public cloudwatch dashboard? How to monitor?  
-    * Easiest approach is by querying the local livepeer node via http but safest to make sure tx actually happened is to check the Ethereum blockchain
-    * Can check if reward() was called by watching the latest transactions from the transcoder's account, either via the [etherscan API](https://etherscan.io/apis)
-    * Can do the same thing by querying the local geth node -
-      * Via geth console - but need to do this via API, maybe web3
-      This tx was a call to reward()
-      ```
-      geth attach /d2/geth-data/.ethereum/geth.ipc
-      > eth.getTransaction("0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f")
-      > eth.getTransactionReceipt("0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f")
-      ```
-      * or via geth's [web3 javascript api](https://github.com/ethereum/wiki/wiki/JavaScript-API#web3ethgettransaction) for communicating with an ethereum node from inside a javascript application  
-      * Or use the [JSON-RPC api](https://github.com/ethereum/wiki/wiki/JSON-RPC) directly. These docs include [curl examples](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactionbyhash):
-      ```
-      curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionByHash","params":["0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f"],"id":1}' http://localhost:8545  
-      ```
-      but there's not an easy way to list recent transactions for an account or contract ... looks like filters/logs are the way to do this? https://github.com/ethereum/go-ethereum/issues/1897  or here https://github.com/ethereum/go-ethereum/issues/2104  
-      * But would still need to decode the `input` param and translate it to the function name. According to the [Ethereum Contract ABI](https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI), "the first four bytes of the call data for a function call specifies the function to be called. It is the first (left, high-order in big-endian) four bytes of the Keccak (SHA-3) hash of the signature of the function."   
-        * GitHub: [ConsenSys ABI decoder](https://github.com/ConsenSys/abi-decoder) project    
-        * GitHub: [Ethereum tx input data decoder project](https://github.com/miguelmota/ethereum-input-data-decoder)  
-        * GitHub: [Decoder and encoder for the Ethereum ABI](https://github.com/ethereumjs/ethereumjs-abi)  
-        * GitHub: [python eth abi](https://github.com/ethereum/eth-abi) project with input decoding [example on stackexchange](https://ethereum.stackexchange.com/questions/6297/python-eth-getfilterchanges-data-how-to-decode)  
-      * The LivePeer process also makes an http api available, so it's possible to ask it for transcoder stats:  
-      ```
-      $ curl http://127.0.0.1:8935/transcoderInfo
-      {"Address":"0x50d69f8253685999b4c74a67ccb3d240e2a56ed6","LastRewardRound":1018,"RewardCut":30000,"FeeShare":300000,"PricePerSegment":150000000000,"PendingRewardCut":30000,"PendingFeeShare":300000,"PendingPricePerSegment":150000000000,"DelegatedStake":6454553077282307328907,"Active":true,"Status":"Registered"}
-      ```  
-      such as `LastRewardRound` - the last round reward was called in. See [go-livepeer/server/webserver.go](https://github.com/livepeer/go-livepeer/blob/4589a1364fa9d29e9d196d259f1f235116d45953/server/webserver.go) for other functions you can call.  
-      * Instead of decoding the contract input data could just string match since we know that the reward hex is "input":"0x228cb733", but it's a dirty hack.  
-* Custom nagios or cloudwatch plugin (possible?) to do health check requests (maybe ELB?) and maybe check basic stats  
-  * Go and systemd both support watchdog http://0pointer.de/blog/projects/watchdog.html  
+* No root logins, auth via ssh keys only, keep security patches up-to-date, review all running procs and open ports, shut down (permanently) all unnecessary ones, make sure you have 2FA enable for your AWS account, backup regularly and automatically, monitor your boxes, regularly audit and rotate authorized ssh keys, AWS IAM permissions, sudo access, don't allow access via root AWS ssh keys, encourage audit trails via access via username-accounts (vs system accounts such as "ubuntu"), etc. Be aware of security implications of backups, esp snapshots of volumes  
 * Securing your node and access to private ETH key  
   * Tradeoffs, hacks, etc.  
   * Storing private key in [AWS Parameter Store](https://aws.amazon.com/systems-manager/features/#Parameter_Store) in AWS [Key Management Service](https://aws.amazon.com/kms/)?  
@@ -320,8 +286,52 @@ Now enroll as a transcoder
   - Auto-scaling  
 - Monitoring, Alerting, Metrics Collection  
   - Health checks of LivePeer instance  
-  - Monitor and alert if reward() doesn't get called  
+  - Go and systemd both support watchdog for process health monitoring http://0pointer.de/blog/projects/watchdog.html  
+  - It would be nice if the livepeer internal webserver supported a call to `/health` for example, which could be checked by a nagios/etc plugin, as well as by a load balancer which was monitoring the health of a pool of transcoders.  You could sortof fake this today by using a call to `http://<transcoder ip>:8935/nodeID` and make sure it returns the expected nodeID, but a proper `/health` function could better check a few vital signs.  
+  - Monitor and alert if reward() doesn't get called. A few ways to monitor this:  
+    - Query the local livepeer node via http:  
+    ```
+      $ curl http://127.0.0.1:8935/transcoderInfo
+      {"Address":"0x50d69f8253685999b4c74a67ccb3d240e2a56ed6","LastRewardRound":1018,"RewardCut":30000,"FeeShare":300000,"PricePerSegment":150000000000,"PendingRewardCut":30000,"PendingFeeShare":300000,"PendingPricePerSegment":150000000000,"DelegatedStake":6454553077282307328907,"Active":true,"Status":"Registered"}
+      ```  
+     and if `LastRewardRound` doesn't match the current round (which you have to get via another call), then `reward()` has not yet been called. This would be straightfoward to monitor automatically and you could alert on this after a certain time of day.     
+    - The highest certainty check would be to query the Ethereum blockchain for the tx where your node called `reward()` 
+      - Could do this by querying the local geth node via [JSON-RPC api](https://github.com/ethereum/wiki/wiki/JSON-RPC), e.g. using [eth_getTransactionbyHash](https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_gettransactionbyhash):  
+      ```
+      curl -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"eth_getTransactionByHash","params":["0xcde8ec889fa7ed433d2a55c5f34f1be98f4dad97791a27c258d18eb1bad17d0f"],"id":1}' http://localhost:8545  
+      ```
+      but there's not an easy way to list recent transactions for an account or contract ... looks like filters/logs are the way to do this? https://github.com/ethereum/go-ethereum/issues/1897  or here https://github.com/ethereum/go-ethereum/issues/2104     
+      - Use the [etherscan API](https://etherscan.io/apis), the `input` value below indicates a call to `reward()`:    
+      ```
+      $ curl 'http://api.etherscan.io/api?module=account&action=txlist&address=<your node address>&startblock=5858336&endblock=5858337&sort=desc&apikey=<api key>'
+      {
+      "status":"1",
+      "message":"OK",
+      "result":[
+        {
+        "blockNumber":"5944652",
+        "blockHash":"0x58d1fcc7ec68dd001a3c166572b3a2d308f4b0598a92faf46e509abb70118de3",
+        "timeStamp":"1531311107",
+        "hash":"0x5960471df2da7cc405a4bcb5a195c73a711b37ada828a56672b4ef40c891b918",
+        "nonce":"203",
+        "transactionIndex":"136",
+        "from":"0x345551571c5ef20111c6168b9a498dfb836e7c09",
+        "to":"0x511bc4556d823ae99630ae8de28b9b80df90ea2e",
+        "value":"0",
+        "gas":"262287",
+        "gasPrice":"8000000000",
+        "input":"0x228cb733",
+        "contractAddress":"",
+        "cumulativeGasUsed":"3474053",
+        "txreceipt_status":"1",
+        "gasUsed":"213639",
+        "confirmations":"1143",
+        "isError":"0"
+        }]
+      }
+      ```  
   - Monitor amount of ETH in transcoder's account and alert if below certain threshold.  
+  - Metrics collection - one idea is [publish metrics to AWS CloudWatch](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/publishingMetrics.html), possibly with [custom events](https://aws.amazon.com/blogs/security/how-to-use-amazon-cloudwatch-events-to-monitor-application-health/)? Though I haven't researched if feasible in this case.  
 - Security  
   - Better management of Ethereum private keys  
   - Possibly using Hashicorp's Vault for private keys or AWS KMS   
