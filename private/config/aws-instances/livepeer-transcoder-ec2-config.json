@@ -1,0 +1,40 @@
+{
+    "BlockDeviceMappings": [
+        {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+                "DeleteOnTermination": true,
+                "VolumeSize": 32,
+                "VolumeType": "gp2"
+            }
+        },
+        {
+            "DeviceName": "/dev/sdg",
+            "Ebs": {
+                "DeleteOnTermination": false,
+                "VolumeSize": 100,
+                "VolumeType": "gp2"
+            }
+        },
+        {
+            "DeviceName": "/dev/sdh",
+            "Ebs": {
+                "DeleteOnTermination": false,
+                "VolumeSize": 500,
+                "VolumeType": "gp2"
+            }
+        }
+    ],
+    "ImageId": "ami-85f9b8fa",
+    "InstanceType": "c4.2xlarge",
+    "KeyName": "notation-dev",
+    "Monitoring": {
+        "Enabled": true
+    },
+    "SecurityGroups": [
+        "livepeer-inbound"
+    ],
+    "DryRun": false,
+    "EbsOptimized": true,
+    "InstanceInitiatedShutdownBehavior": "stop"
+}
