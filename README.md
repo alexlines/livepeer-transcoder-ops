@@ -1,17 +1,44 @@
 ## Running a LivePeer transcoder   
-* Goals  
-* Future Architecture Directions (see OPs TODO)  
-* Config is code  
-* Decisions  
-platform - AWS, Linux, Ubuntu  
-instance size  
-why an elastic ip address  
-- better flexibility
-EBS Volumes - config and data concentration, separate from root disk, flexilibity - easily expandable, easily transferred to new instance (speed of recovery), easy to backup (EBS snapshots, easily automated)  
-process supervision - systemd  
-timekeeping - obviously important. In Ubuntu 18.04, the base system uses systemd-timesyncd which may be fine, but may want to consider using chrony for better accuracy and syncing **(grab links from below).**  
-running a local geth node  
-Security
+The purpose of this project is to document my own approach to running a LivePeer transcoder in production. The goal is to run robust infrastructure for the LivePeer transcoding network and to share any supporting code or processes to help the community do the same. These are the early steps in building a robust operating framework in which to run a transcoder network. Some of the operational characteristics I'm working toward include:  
+  * Availability  including fast recovery
+  * Security  
+  * Flexibility  / composability  
+  * Repeatability  
+  * Capacity understanding not the same as performance  
+  * Configuration  / Config is code   
+
+## Key Decisions  
+Some key decisions I made and why.  
+- Platform - AWS, Linux, Ubuntu  
+- Hardware Resources - instance size  
+The instructions below will spin up an instance with the following characteristics:  
+
+| | |  
+| --- | --- |  
+| Instance type | [c4.2xlarge](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly)  |  
+| CPU | 8 vCPUs | 
+| Network | High |
+| EBS Optimized | [YES](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html) |
+| OS | ami-85f9b8fa [Ubuntu 18.04 LTS HVM AMI](https://cloud-images.ubuntu.com/locator/ec2/) |
+| Root disk | EBS-backed, 32GB [gp2 SSD](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_gp2) |
+| EBS Vol 1 | 100GB gp2 SSD for LivePeer data |
+| EBS Vol 2 | 500 GB gp2 SSD for dedicated local geth node |  
+- Addresability - fixed ip address (AWS Elastic IP Address) better flexibility  
+- Storage performance - gp2 SSD  
+- Storage flexibility - EBS Volumes - config and data concentration, separate from root disk, flexilibity - easily expandable, easily transferred to new instance (speed of recovery), easy to backup (EBS snapshots, easily automated)  
+- Process supervision - systemd (ugh)  
+- Timekeeping - obviously important. In Ubuntu 18.04, the base system uses [systemd-timesyncd](https://www.freedesktop.org/software/systemd/man/timedatectl.html) which looks ok, but may want to consider using [Chrony](https://chrony.tuxfamily.org/) for more fine-grained control of accuracy and syncing. See the [FAQ](https://chrony.tuxfamily.org/faq.html), this [Ubuntu help article on time sync](https://help.ubuntu.com/lts/serverguide/NTP.html), and a [basic overview of configuring chrony](https://blog.ubuntu.com/2018/04/09/ubuntu-bionic-using-chrony-to-configure-ntp).  
+- Ethereum node access - running a local geth node  
+  * Although it's not 100% clear in the docs - official docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. I know that it's not required but I think it's clearly beneficial, eg:  
+  * "If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network."  
+  * How to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url") from [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go#L83)  
+  * You can specify a local geth node on the command line via `-ethDatadir` flag when starting the node. The directory specified should contain the ipc file for the Geth node, from https://github.com/livepeer/wiki/wiki/Livepeer-Node   
+  * See this post for running a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
+  * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
+  * My preference is to run it on a dedicated local node (not the transcoder)  
+  * Is it really ok to run geth light client vs fast-sync (or full node)?  
+- Security  
+This is not meant to be an exhaustive review of security practices, just a quick overview of my approach and considerations that are top of mind.  
 * Automating startup of `livepeer` by automatically supplying a password for the ethereum?  
   * I just supplied a blank password the first time and then it doesn't ask for password on startup in the future  
   * What are implications of no password? For backing up files, for security of account in general, etc?  
@@ -26,36 +53,18 @@ Security
   * [Getting started with AWS Parameter store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-paramstore.html) see also How AWS [Systems Manager Parameter Store Uses AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/services-parameter-store.html?shortFooter=true)  
   * goog: [golang example aws kms](https://www.google.com/search?biw=1295&bih=1103&ei=N30yW4aHJ8vxzgLp1J-gBw&q=golang+example+aws+kms&oq=golang+example+aws+kms&gs_l=psy-ab.3..33i22i29i30k1.231231.237437.0.238301.22.17.0.4.4.0.305.1360.3j7j0j1.11.0....0...1c.1.64.psy-ab..8.14.1249...0j0i67k1j0i131i67k1j0i131k1j0i22i30k1.0.7Ap2nvkZiVw)  
   * It's just that the ethereum client doesn't seem to have the capability to get the account key over the network or from anything other than a file https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go  
-* Running a local geth node would definitely be helpful
-  * Although it's not 100% clear in the docs - official docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. I know that it's not required but I think it's clearly beneficial, eg:  
-  * "If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network."  
-  * How to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url") from [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go#L83)  
-  * You can specify a local geth node on the command line via `-ethDatadir` flag when starting the node. The directory specified should contain the ipc file for the Geth node, from https://github.com/livepeer/wiki/wiki/Livepeer-Node   
-  * See this post for running a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
-  * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
-  * My preference is to run it on a dedicated local node (not the transcoder)  
-  * Is it really ok to run geth light client vs fast-sync (or full node)?  
 
 
-The goal is to run robust infrastructure for the LivePeer transcoding network. I care about  
-* Availability, Performance, Security, Repeatability, Fast recovery   
-* This is all very specific to AWS and Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.   
+  
+**Note:** This is all very specific to AWS and Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.   
+
+* Future Architecture Directions (see OPs TODO)  
+There is much room for improvement. See below for some specific areas of known technical debt and future work.  
+
 
 **Instance type and resources**  
 I want to be sure this transcoder can perform, so for the initial phase I've overprovisioned the resources of CPU, RAM, disk performance, and bandwidth (details below). This means this specific configuration is expensive so feel free to choose lower-resource instance types.  
 
-The instructions below will spin up an instance with the following characteristics:  
-
-| | |  
-| --- | --- |  
-| Instance type | [c4.2xlarge](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly)  |  
-| CPU | 8 vCPUs | 
-| Network | High |
-| EBS Optimized | [YES](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSOptimized.html) |
-| OS | ami-85f9b8fa [Ubuntu 18.04 LTS HVM AMI](https://cloud-images.ubuntu.com/locator/ec2/) |
-| Root disk | EBS-backed, 32GB [gp2 SSD](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_gp2) |
-| EBS Vol 1 | 100GB gp2 SSD for LivePeer data |
-| EBS Vol 2 | 500 GB gp2 SSD for dedicated local geth node |  
 
 You can use the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with these characteristics using [this configuration file](https://gist.github.com/alexlines/f8a83c4705755b74e7592e686a4832e9) as follows:  
 **Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You can [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have (which just allow ssh from certain sources), a private key of a different name, and has "DryRun" set to true (change to false to actually launch an instance), so adjust accordingly.   
@@ -346,6 +355,8 @@ Now enroll as a transcoder
 - Log rotation for LivePeer and geth logs    
 - Helpful to give the instance an DNS and/or ENS name?  
 - Better documentation of AWS Security groups, IAM users and permissions, ssh gateway host, etc  
+
+This document https://github.com/alexlines/livepeer-transcoder-ops/commits/988764a110b9b79cefde1f35e4086665ffbcff5f/livepeer-testnet.md
 
 
 **Notes to move elsewhere**  
