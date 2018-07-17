@@ -6,11 +6,13 @@ The purpose of this project is to document my own approach to running a LivePeer
   * Repeatability  
   * Capacity understanding not the same as performance  
   * Configuration  / Config is code   
+  
+**Note:** This work is all very specific to AWS and Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, etc.   
 
 ## Key Decisions  
 Some key decisions I made and why.  
 - **Platform** - AWS, Linux, Ubuntu - addressable via API, flexibility, elastic capacity.  
-- **Hardware Resources** - initially we're over-provisioned to make sure we have plenty of capacity.  
+- **Hardware Resources** - I want to be sure this transcoder can perform, so for the initial phase I've overprovisioned the resources of CPU, RAM, disk performance, and bandwidth (details below). This means this specific configuration is expensive - [$300+/month](https://www.ec2instances.info/?filter=c4.2xlarge&cost_duration=monthly) so feel free to choose lower-resource instance types.  
 The instructions below will spin up an instance with the following characteristics:  
 
 | | |  
@@ -28,18 +30,17 @@ The instructions below will spin up an instance with the following characteristi
 - **Storage flexibility** - EBS Volumes - concentrate data and config with deliberate filesystem location choices, not in default home directories, on dedicated volumes separate from root disk, flexilibity - easily expandable, easily transferred to new instance (speed of recovery), easy to backup (EBS snapshots, easily automated).  
 - **Process supervision** - systemd (ugh). Not a huge fan of systemd, but given that it's default now, there's a lot of value in not fighting the native system.  
 - **Timekeeping** is always crucial. In Ubuntu 18.04, the base system uses [systemd-timesyncd](https://www.freedesktop.org/software/systemd/man/timedatectl.html) which looks ok, but may want to consider using [Chrony](https://chrony.tuxfamily.org/) for more fine-grained control of accuracy and syncing. See the [FAQ](https://chrony.tuxfamily.org/faq.html), this [Ubuntu help article on time sync](https://help.ubuntu.com/lts/serverguide/NTP.html), and a [basic overview of configuring chrony](https://blog.ubuntu.com/2018/04/09/ubuntu-bionic-using-chrony-to-configure-ntp).  
-- **Ethereum node access** - we run a local (light) geth node  
+- **Ethereum network access** - we run a local (light) geth node  
   * The official docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. That's correct, it's not strictly required but I think it's clearly beneficial - as mentioned in this [FAQ](https://livepeer.readthedocs.io/en/latest/transcoding.html#faq), a flaky connection to the Ethereum network can lead to errors, calls to `reward()` failing, failure to transcode incoming jobs, etc. The best way to ensure a solid, fast connection to the Ethereum network is to run a local geth / parity node.   
   * See this post for args to run a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
   * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
   * My preference is to run it on a dedicated local node (not the transcoder)  
 - **Security**  
 This is not meant to be an exhaustive review of security practices, just a quick overview of some considerations that are top of mind and decisions I made.  
-  * Securing Ethereum keys is one of the most important considerations. One of the first decisions is whether to protect the local Ethereum key with a passphrase, which seems like an obvious first step, but there are trade-offs. Having automated, non-interactive startup of the LivePeer transcoder is an important operational goal in order to acheive any kind of scale and systems automation. There are ways to provide the passphrase automatically at startup time to the livepeer binary, but the passphrase would still have to live in a file somewhere on disk and it would not be truly secure anyone with access to the instance. LivePeer relies on [geth's Ethereum account funcs](https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go) to unlock accounts and geth doesn't seem to be able to request private keys over the network, for example, so they must be stored locally and unlocked via intereactive prompt (as far as I can tell). If you want non-interactive startup paired with a passphrase, you'll have to store the passphrase locally on the machine. My decision is to secure the instance to the best of my ability, optimize for operational efficiency at scale, and not use a passphrase on the local Eth private key.  
-  * I just supplied a blank password the first time and then it doesn't ask for password on startup in the future  
+  * Securing Ethereum keys is one of the most important considerations. One of the first decisions is whether to protect the local Ethereum key with a passphrase, which seems like an obvious first step, but there are trade-offs. Having automated, non-interactive startup of the LivePeer transcoder is an important operational goal in order to acheive any kind of scale and systems automation. There are ways to provide the passphrase automatically at startup time to the livepeer binary, but the passphrase would still have to live in a file somewhere on disk and it would not be truly secure anyone with access to the instance. LivePeer relies on [geth's Ethereum account funcs](https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go) to unlock accounts and geth doesn't seem to be able to request private keys over the network, for example, so they must be stored locally and unlocked via intereactive prompt (as far as I can tell). If you want non-interactive startup paired with a passphrase, you'll have to store the passphrase locally on the machine. My decision is to secure the instance to the best of my ability, optimize for operational efficiency at scale, and not use a passphrase on the local Eth private key. I just supplied a blank password the first time and then it doesn't ask for password on startup in the future.  
   * The implications are that you have to strongly limit access to the instance and to the data directories - anyone with access and sufficient permissions can access the private key. This also means that backups of the data directory will contain the unprotected private key, so backups should be encrypted and appropriate controls should be in place around decryption keys.  
   * You could supply the passphrase via command-line, but I don't really want it to be visible in the process table  
-  * Supplying the passphrase via config file would be slightly better than no passphrase  
+  * Supplying the passphrase via config file would be slightly better than no passphrase.  
 * Ports - all ports on the transcoder are locked down, closed to the world and to the local network except 4433, as required by [upcoming network updates](https://forum.livepeer.org/t/upcoming-networking-upgrades/298) which I think has to be open to the world.  
   * Note that ssh on the transcoder node is also closed to the world and, in our setup, only accessible through an ssh bastion host in our AWS network which runs ssh on a non-standard port and only allows access from specific, known IPs.  
 * Other considerations:  
@@ -58,22 +59,13 @@ This is not meant to be an exhaustive review of security practices, just a quick
   * Limit access to sudo
   * Don't encourage access via root AWS ssh keys, only user account keys  
 
-
-  
-**Note:** This is all very specific to AWS and Ubuntu. I haven't done the work to generalize for Amazon Linux, RHEL, CentOS, whatever.   
-
-* Future Architecture Directions (see OPs TODO)  
-There is much room for improvement. See below for some specific areas of known technical debt and future work.  
-
-
-**Instance type and resources**  
-I want to be sure this transcoder can perform, so for the initial phase I've overprovisioned the resources of CPU, RAM, disk performance, and bandwidth (details below). This means this specific configuration is expensive so feel free to choose lower-resource instance types.  
-
+* Future Architecture Directions see [OPs TODO](#ops-todo)  
+There is much room for improvement. See below for some specific areas of known technical debt and future work.   
 
 You can use the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with these characteristics using [this configuration file](https://github.com/alexlines/livepeer-transcoder-ops/blob/master/private/config/aws-instances/livepeer-transcoder-ec2-config.json) as follows:  
 **Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You can [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have (which just allow ssh from certain sources), a private key of a different name, and has "DryRun" set to true (change to false to actually launch an instance), so adjust accordingly.   
 
-Launch the instance  
+## Instance launch  
 ```
 aws --profile notation ec2 run-instances \
     --cli-input-json file://livepeer-transcoder-ec2-config.json  
@@ -278,7 +270,7 @@ Choose `13. Invoke multi-step "become a transcoder"`
 **Reference**   
   * Master reference docs and info is aggregated in this thread - [Transcoder Megathread - Start here to learn about playing the role of transcoder on Livepeer](https://forum.livepeer.org/t/transcoder-megathread-start-here-to-learn-about-playing-the-role-of-transcoder-on-livepeer/190)   
 
-**OPs TODO**  
+## OPs TODO  
 - Configuration  
   - Use actual config management  
   - Testing  
