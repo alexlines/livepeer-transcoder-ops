@@ -284,7 +284,7 @@ Choose `13. Invoke multi-step "become a transcoder"`
 - Traffic management  
   - Load balancing  
   - Automatic failover  
-  - Regional routing  
+  - Regional routing / responding to regional demand  
   - Auto-scaling  
 - Monitoring, Alerting, Metrics Collection  
   - Health checks of LivePeer instance  
