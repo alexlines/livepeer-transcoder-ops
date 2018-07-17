@@ -1,6 +1,6 @@
 ## Running a LivePeer transcoder   
 The purpose of this project is to document my own approach to running a LivePeer transcoder in production. The goal is to run robust infrastructure for the LivePeer transcoding network and to share any supporting code or processes to help the community do the same. These are the early steps in building a robust operating framework in which to run a transcoder network. Some of the operational characteristics I'm working toward include:  
-  * Availability  including fast recovery
+  * Availability (including fast recovery)  
   * Security  
   * Flexibility  / composability  
   * Repeatability  
@@ -9,8 +9,8 @@ The purpose of this project is to document my own approach to running a LivePeer
 
 ## Key Decisions  
 Some key decisions I made and why.  
-- Platform - AWS, Linux, Ubuntu  
-- Hardware Resources - instance size  
+- **Platform** - AWS, Linux, Ubuntu - addressable via API, flexibility, elastic capacity.  
+- **Hardware Resources** - initially we're over-provisioned to make sure we have plenty of capacity.  
 The instructions below will spin up an instance with the following characteristics:  
 
 | | |  
@@ -23,22 +23,18 @@ The instructions below will spin up an instance with the following characteristi
 | Root disk | EBS-backed, 32GB [gp2 SSD](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html#EBSVolumeTypes_gp2) |
 | EBS Vol 1 | 100GB gp2 SSD for LivePeer data |
 | EBS Vol 2 | 500 GB gp2 SSD for dedicated local geth node |  
-- Addresability - fixed ip address (AWS Elastic IP Address) better flexibility  
-- Storage performance - gp2 SSD  
-- Storage flexibility - EBS Volumes - config and data concentration, separate from root disk, flexilibity - easily expandable, easily transferred to new instance (speed of recovery), easy to backup (EBS snapshots, easily automated)  
-- Process supervision - systemd (ugh)  
-- Timekeeping - obviously important. In Ubuntu 18.04, the base system uses [systemd-timesyncd](https://www.freedesktop.org/software/systemd/man/timedatectl.html) which looks ok, but may want to consider using [Chrony](https://chrony.tuxfamily.org/) for more fine-grained control of accuracy and syncing. See the [FAQ](https://chrony.tuxfamily.org/faq.html), this [Ubuntu help article on time sync](https://help.ubuntu.com/lts/serverguide/NTP.html), and a [basic overview of configuring chrony](https://blog.ubuntu.com/2018/04/09/ubuntu-bionic-using-chrony-to-configure-ntp).  
-- Ethereum node access - running a local geth node  
-  * Although it's not 100% clear in the docs - official docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. I know that it's not required but I think it's clearly beneficial, eg:  
-  * "If your connection to the Ethereum network is not always great, causing instability in your transcoder and leading to errors such as "Error with x:EOF" so it's better to run your own geth / parity node - ideally not on the same box either. You can use --ethIpcPath flag to specify the local IPC file location, which is a much more stable way to connect to the Ethereum network."  
-  * How to specify a local geth/parity node that's on the same network but maybe not the same box? ok looks like you can also specify ethUrl := flag.String("ethUrl", "", "geth/parity rpc or websocket url") from [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go#L83)  
-  * You can specify a local geth node on the command line via `-ethDatadir` flag when starting the node. The directory specified should contain the ipc file for the Geth node, from https://github.com/livepeer/wiki/wiki/Livepeer-Node   
-  * See this post for running a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
+- **Addressability** - fixed ip address (AWS Elastic IP Address) for stable addressability, ability to moved ip between instances for better flexibility.  
+- **Storage performance** - gp2 SSD for decent, consistent performance.  
+- **Storage flexibility** - EBS Volumes - concentrate data and config with deliberate filesystem location choices, not in default home directories, on dedicated volumes separate from root disk, flexilibity - easily expandable, easily transferred to new instance (speed of recovery), easy to backup (EBS snapshots, easily automated).  
+- **Process supervision** - systemd (ugh). Not a huge fan of systemd, but given that it's default now, there's a lot of value in not fighting the native system.  
+- **Timekeeping** is always crucial. In Ubuntu 18.04, the base system uses [systemd-timesyncd](https://www.freedesktop.org/software/systemd/man/timedatectl.html) which looks ok, but may want to consider using [Chrony](https://chrony.tuxfamily.org/) for more fine-grained control of accuracy and syncing. See the [FAQ](https://chrony.tuxfamily.org/faq.html), this [Ubuntu help article on time sync](https://help.ubuntu.com/lts/serverguide/NTP.html), and a [basic overview of configuring chrony](https://blog.ubuntu.com/2018/04/09/ubuntu-bionic-using-chrony-to-configure-ntp).  
+- **Ethereum node access** - we run a local (light) geth node  
+  * The official docs [recommend running geth](https://livepeer.readthedocs.io/en/latest/node.html) but other info, such as [this forum post](https://forum.livepeer.org/t/how-to-run-livepeer-with-geth/143), say it's not necessary. That's correct, it's not strictly required but I think it's clearly beneficial - as mentioned in this [FAQ](https://livepeer.readthedocs.io/en/latest/transcoding.html#faq), a flaky connection to the Ethereum network can lead to errors, calls to `reward()` failing, failure to transcode incoming jobs, etc. The best way to ensure a solid, fast connection to the Ethereum network is to run a local geth / parity node.   
+  * See this post for args to run a local geth instance https://forum.livepeer.org/t/transcoder-tip-geth-light-client/247/7  
   * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
   * My preference is to run it on a dedicated local node (not the transcoder)  
-  * Is it really ok to run geth light client vs fast-sync (or full node)?  
-- Security  
-This is not meant to be an exhaustive review of security practices, just a quick overview of my approach and considerations that are top of mind.  
+- **Security**  
+This is not meant to be an exhaustive review of security practices, just a quick overview of some considerations that are top of mind.  
 * Automating startup of `livepeer` by automatically supplying a password for the ethereum?  
   * I just supplied a blank password the first time and then it doesn't ask for password on startup in the future  
   * What are implications of no password? For backing up files, for security of account in general, etc?  
