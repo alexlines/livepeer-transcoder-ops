@@ -34,21 +34,29 @@ The instructions below will spin up an instance with the following characteristi
   * Need a full copy of ETH blockchain? It seems a fast sync is sufficient  
   * My preference is to run it on a dedicated local node (not the transcoder)  
 - **Security**  
-This is not meant to be an exhaustive review of security practices, just a quick overview of some considerations that are top of mind.  
-* Securing Ethereum keys is a key consideration. Automating startup of `livepeer` by automatically supplying a password for the ethereum?  
+This is not meant to be an exhaustive review of security practices, just a quick overview of some considerations that are top of mind and decisions I made.  
+  * Securing Ethereum keys is one of the most important considerations. One of the first decisions is whether to protect the local Ethereum key with a passphrase, which seems like an obvious first step, but there are trade-offs. Having automated, non-interactive startup of the LivePeer transcoder is an important operational goal in order to acheive any kind of scale and systems automation. There are ways to provide the passphrase automatically at startup time to the livepeer binary, but the passphrase would still have to live in a file somewhere on disk and it would not be truly secure anyone with access to the instance. LivePeer relies on [geth's Ethereum account funcs](https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go) to unlock accounts and geth doesn't seem to be able to request private keys over the network, for example, so they must be stored locally and unlocked via intereactive prompt (as far as I can tell). If you want non-interactive startup paired with a passphrase, you'll have to store the passphrase locally on the machine. My decision is to secure the instance to the best of my ability, optimize for operational efficiency at scale, and not use a passphrase on the local Eth private key.  
   * I just supplied a blank password the first time and then it doesn't ask for password on startup in the future  
-  * What are implications of no password? For backing up files, for security of account in general, etc?  
-  * Could just do it via command-line, but don't really want it to be visible to 'ps'  
-  * Would prefer at least a config file if nothing else ... 
-* Ports - all locked down, closed to the world and the local network except 4433, as required by [upcoming network updates](https://forum.livepeer.org/t/upcoming-networking-upgrades/298) which I think has to be open to the world.
-  * Note that ssh is also closed to the world and, in our setup, only accessible through an ssh bastion host which runs ssh on a non-standard port and is locked down except to specific, known IPs.    
-* No root logins, auth via ssh keys only, keep security patches up-to-date, review all running procs and open ports, shut down (permanently) all unnecessary ones, make sure you have 2FA enable for your AWS account, backup regularly and automatically, monitor your boxes, regularly audit and rotate authorized ssh keys, AWS IAM permissions, sudo access, don't allow access via root AWS ssh keys, encourage audit trails via access via username-accounts (vs system accounts such as "ubuntu"), etc. Be aware of security implications of backups, esp snapshots of volumes  
-* Securing your node and access to private ETH key  
-  * Tradeoffs, hacks, etc.  
-  * Storing private key in [AWS Parameter Store](https://aws.amazon.com/systems-manager/features/#Parameter_Store) in AWS [Key Management Service](https://aws.amazon.com/kms/)?  
-  * [Getting started with AWS Parameter store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-paramstore.html) see also How AWS [Systems Manager Parameter Store Uses AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/services-parameter-store.html?shortFooter=true)  
-  * goog: [golang example aws kms](https://www.google.com/search?biw=1295&bih=1103&ei=N30yW4aHJ8vxzgLp1J-gBw&q=golang+example+aws+kms&oq=golang+example+aws+kms&gs_l=psy-ab.3..33i22i29i30k1.231231.237437.0.238301.22.17.0.4.4.0.305.1360.3j7j0j1.11.0....0...1c.1.64.psy-ab..8.14.1249...0j0i67k1j0i131i67k1j0i131k1j0i22i30k1.0.7Ap2nvkZiVw)  
-  * It's just that the ethereum client doesn't seem to have the capability to get the account key over the network or from anything other than a file https://github.com/livepeer/go-livepeer/blob/master/eth/accountmanager.go  
+  * The implications are that you have to strongly limit access to the instance and to the data directories - anyone with access and sufficient permissions can access the private key. This also means that backups of the data directory will contain the unprotected private key, so backups should be encrypted and appropriate controls should be in place around decryption keys.  
+  * You could supply the passphrase via command-line, but I don't really want it to be visible in the process table  
+  * Supplying the passphrase via config file would be slightly better than no passphrase  
+* Ports - all ports on the transcoder are locked down, closed to the world and to the local network except 4433, as required by [upcoming network updates](https://forum.livepeer.org/t/upcoming-networking-upgrades/298) which I think has to be open to the world.  
+  * Note that ssh on the transcoder node is also closed to the world and, in our setup, only accessible through an ssh bastion host in our AWS network which runs ssh on a non-standard port and only allows access from specific, known IPs.  
+* Other considerations:  
+  * No root logins are permitted
+  * Auth is via ssh keys only  
+  * Logins are only via named user accounts (e.g. "sabrina") for auditability, not via anonymous system accounts (e.g. "ubuntu"), although I use "ubuntu" in these examples as a placeholder.  
+  * Keep system security patches up-to-date  
+  * Review all running procs and open ports and shut down (permanently) all unnecessary ones
+  * Make sure you have 2FA enable for your AWS account  
+  * Backup regularly and automatically.  
+  * Check your backups for validity and restorability.  
+  * Be aware of security implications of backups - is sensitive data in your backups? Encrypt  
+  * Monitor your boxes (metrics, health, etc).  
+  * Regularly audit and rotate authorized ssh keys and accounts
+  * Use AWS IAM permissions for fine-grained access control
+  * Limit access to sudo
+  * Don't encourage access via root AWS ssh keys, only user account keys  
 
 
   
@@ -332,6 +340,8 @@ Choose `13. Invoke multi-step "become a transcoder"`
 - Security  
   - Better management of Ethereum private keys  
   - Possibly using Hashicorp's Vault for private keys or AWS KMS   
+  - Could store your private key in [AWS Parameter Store](https://aws.amazon.com/systems-manager/features/#Parameter_Store) in AWS [Key Management Service](https://aws.amazon.com/kms/) and write a wrapper script which can retrieve the private key  
+    - [Getting started with AWS Parameter store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-paramstore.html) see also How AWS [Systems Manager Parameter Store Uses AWS KMS](https://docs.aws.amazon.com/kms/latest/developerguide/services-parameter-store.html?shortFooter=true)   
 - EBS Volumes
   - Automate EBS snapshots  
   - Encrypt EBS Volumes by default?  
