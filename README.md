@@ -62,24 +62,23 @@ This is not meant to be an exhaustive review of security practices, just a quick
 * Future Architecture Directions see [OPs TODO](#ops-todo)  
 There is much room for improvement. See below for some specific areas of known technical debt and future work.   
 
-You can use the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with these characteristics using [this configuration file](https://github.com/alexlines/livepeer-transcoder-ops/blob/master/private/config/aws-instances/livepeer-transcoder-ec2-config.json) as follows:  
-**Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You can [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have (which just allow ssh from certain sources), a private key of a different name, and has "DryRun" set to true (change to false to actually launch an instance), so adjust accordingly.   
-
 ## Instance launch  
+You can use the [AWS Command Line Interface](https://docs.aws.amazon.com/cli/latest/userguide/installing.html) to launch instances with these characteristics using [this configuration file](https://github.com/alexlines/livepeer-transcoder-ops/blob/master/private/config/aws-instances/livepeer-transcoder-ec2-config.json) as follows:  
+**Note** This command line won't work for you as-is because the named profile "notation" won't exist on your system. You can [create your own named profile config](https://docs.aws.amazon.com/cli/latest/userguide/cli-multiple-profiles.html) and reference that. This config also references named security groups which you won't have (which just allow ssh from certain sources), a private key of a different name, so adjust accordingly.   
 ```
 aws --profile notation ec2 run-instances \
     --cli-input-json file://livepeer-transcoder-ec2-config.json  
 ```  
 
 
-Allocate elastic ip  to have a stable public address  
+**Allocate elastic ip  to have a stable public address**  
 ```
 aws --profile notation ec2 allocate-address  
 aws --profile notation ec2 associate-address --instance-id <instance id> --public-ip <ip address>  
 ```   
 
 
-Grab latest LivePeer binaries  
+**Get most recent LivePeer release**  
 You can build from scratch if you want but why ... I won't go into that, read more about it in the [official README](https://github.com/livepeer/go-livepeer/blob/master/README.md)    
 Download the latest mainnet-targeted livepeer and livepeer_cli from https://github.com/livepeer/go-livepeer/releases.  
 ```
@@ -90,25 +89,34 @@ gzip -d -c livepeer_linux.tar.gz | tar xvf -
 
 
 System Ops  
-If the EBS volumes weren't created at instance instatiation, create them now.   
-100GB gp2 disk for LivePeer storage / operations   
-Adjust the availability zone to match instance az   
+**Dedicated LivePeer volume**  
+If the LivePeeer EBS volume was not created at instance instantiation, create and attach now.  
+100GB gp2 disk for LivePeer storage / operations  
+Adjust the availability zone to match the instance's az   
 ```
 aws --profile notation ec2 create-volume --size 100 --region us-east-1 --availability-zone us-east-1a --volume-type gp2  
 aws --profile notation ec2 attach-volume --device /dev/sdg --instance-id <instance-id> --volume-id <volume-id>  
-# run locally on the box:  
+```
+Then login to the box and create filesystem, mount point, and add volume to fstab (device names may vary):  
+```
+# ssh to instance and run locally on the box:  
 sudo mkfs.ext4 /dev/xvdg  
 sudo mkdir /d1  
 echo "UUID=<volume UUID> /d1 ext4 defaults 0 2" | sudo tee -a /etc/fstab  
 sudo mount /d1    
 ```  
 
-500GB gp2 SSD disk for running local geth    
-Adjust availability zone to match instance az   
+**Dedicated geth volume**  
+If the geth EBS volume was not created at instance instantiation, create and attach now.  
+500GB gp2 disk for geth storage / operations  
+Adjust the availability zone to match the instance's az  
 ```
 aws --profile notation ec2 create-volume --size 500 --region us-east-1 --availability-zone us-east-1a --volume-type gp2  
 aws --profile notation ec2 attach-volume --device /dev/sdh --instance-id <instance-id> --volume-id <volume-id>  
-# run locally on the box:  
+```
+Then login to the box and create filesystem, mount point, and add volume to fstab (device names may vary):
+```
+# ssh to instance and run locally on the box:  
 sudo mkfs.ext4 /dev/xvdh  
 sudo mkdir /d2     
 echo "UUID=<volume UUID> /d2 ext4 defaults 0 2" | sudo tee -a /etc/fstab  
@@ -124,7 +132,7 @@ hostname tc001.mydomain.com
 
 
 **Filesystem operations**   
-For this setup, All LivePeer-specific files (binaries, logs, ethereum accounts, keys, etc) live on a dedicated EBS volume under /d1. The EBS volume can be backed-up via EBS snapshots and easily attached to a new instance if necessary.  
+For this setup, All LivePeer-specific files (binaries, logs, ethereum accounts, keys, etc) live on a dedicated EBS volume under /d1. The EBS volumes can be backed-up via EBS snapshots and easily attached to a new instance if necessary.  
 ```
 sudo mkdir -p /d1/livepeer/logs  
 sudo mv -i ~/livepeer_linux /d1/livepeer/bin  
@@ -134,7 +142,7 @@ git clone git@github.com:alexlines/livepeer-transcoder-ops.git
 ```  
 
 **Raise open filehandle limits**   
-As noted in this (LivePeer FAQ](https://livepeer.readthedocs.io/en/latest/transcoding.html#faq), you can encounter the "too many open files" error when running a transcoder. As Eric notes in [this forum post](https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170), raising the open file handle limit via pam will address this, but only for cases where you are running the livepeer node manually from an interactive session (e.g., you logged in via ssh):
+As noted in this [LivePeer FAQ](https://livepeer.readthedocs.io/en/latest/transcoding.html#faq), you can encounter the "too many open files" error when running a transcoder. As Eric notes in [this forum post](https://forum.livepeer.org/t/increase-file-limit-as-a-transcoder/170), raising the open file handle limit via pam will address this, but only for cases where you are running the livepeer node manually from an interactive session (e.g., you logged in via ssh):
 from https://bugs.launchpad.net/ubuntu/+source/upstart/+bug/938669  
 > PAM is intended as a user oriented library, and daemons are by definition
 not users. In man limits.conf, it is clearly stated:
@@ -143,7 +151,7 @@ not users. In man limits.conf, it is clearly stated:
 >      are not global, nor are they permanent; existing only for the
 >      duration of the session.  
 See also the responses to this question about the same https://askubuntu.com/a/288534  
-If you're running the LivePeer binary through non-interactive processes (upstart, systemd, etc), you need to raise the limit via a different approach (see our systemd config below). We'll go ahead and raise the limits for interactive sessions in case you want to run manually to debug, etc.  
+If you're running the LivePeer binary through non-interactive processes (upstart, systemd, etc) as we are here, you need to raise the limit via a different approach (see our systemd config below). We'll go ahead and raise the limits for interactive sessions in case you want to run manually to debug, etc.  
 ```  
 echo "ubuntu soft nofile 50000" | sudo tee -a /etc/security/limits.conf
 echo "ubuntu hard nofile 50000" | sudo tee -a /etc/security/limits.conf
@@ -158,18 +166,15 @@ cat /proc/<PID>/limits
 ```
 to confirm the limit has been raised.  
 
-**Install geth and run in light mode**  
-geth systemd stuff  
-Is a geth config file possible?  
-??? Still need to periodically kill it ...  
+**Install geth and run in light mode**    
 ```
 sudo apt-get install -y software-properties-common
 sudo add-apt-repository -y ppa:ethereum/ethereum
 sudo apt-get update
 sudo apt-get install -y ethereum  
 ```
-geth data, logs, and any keys (but not binaries, those get installed in default locations via apt-get install) will all live on a dedicated EBS volume under /d2/ for easy backups via snapshots and to easily attach to a new instance.  
-Setup geth data directories on the attached EBS volume and copy systemd unit file into place:  
+In this configuration, geth's data, logs, and any keys (but not binaries, which get installed in default locations via apt-get install) all live on a dedicated EBS volume under /d2/ for easy backups via snapshots and to easily attach to a new instance.  
+Setup geth data directories on the attached EBS volume. We're running geth under systemd and passing geth's options via a [toml config file](https://github.com/alexlines/livepeer-transcoder-ops/blob/master/private/config/geth/geth-config.toml). Copy the config file and systemd unit file into place:  
 ```
 sudo mkdir /d2/geth-data
 sudo chown -R ubuntu:ubuntu /d2/geth-data
@@ -177,7 +182,7 @@ sudo cp /d1/livepeer-transcoder-ops/private/config/geth/systemd/geth.service /et
 sudo cp /d1/livepeer-transcoder-ops/private/config/geth/geth-config.toml /d2/geth-data/
 ```
 If you plan to use existing .ethereum files or keys, copy them into place now in `/d2/geth-data/.ethereum`  
-start geth via systemd and watch the logs:
+start geth via systemd and watch the logs:  
 ```
 sudo systemctl enable geth    [or 'reenable' if you're overwriting existing config file]
 sudo systemctl start|stop|restart geth
@@ -342,6 +347,7 @@ Choose `13. Invoke multi-step "become a transcoder"`
   - Would it benefit from being a fast-sync node or a full node?  
   - Should probably move geth to a dedicated instance that multiple local transcoder nodes can connect to  
   - Should probably run a local geth cluster in each region you plan to run transcoders  
+  - geth unfortunately seems to get stalled / stuck and appears to benefit from periodically stopping and restarting it.  
 - Log rotation for LivePeer and geth logs    
 - Helpful to give the instance an DNS and/or ENS name?  
 - Better documentation of AWS Security groups, IAM users and permissions, ssh gateway host, etc  
