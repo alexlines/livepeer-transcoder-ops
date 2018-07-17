@@ -35,7 +35,7 @@ The instructions below will spin up an instance with the following characteristi
   * My preference is to run it on a dedicated local node (not the transcoder)  
 - **Security**  
 This is not meant to be an exhaustive review of security practices, just a quick overview of some considerations that are top of mind.  
-* Automating startup of `livepeer` by automatically supplying a password for the ethereum?  
+* Securing Ethereum keys is a key consideration. Automating startup of `livepeer` by automatically supplying a password for the ethereum?  
   * I just supplied a blank password the first time and then it doesn't ask for password on startup in the future  
   * What are implications of no password? For backing up files, for security of account in general, etc?  
   * Could just do it via command-line, but don't really want it to be visible to 'ps'  
@@ -79,14 +79,13 @@ aws --profile notation ec2 associate-address --instance-id <instance id> --publi
 ```   
 
 
-Grab LivePeer binaries  
+Grab latest LivePeer binaries  
 You can build from scratch if you want but why ... I won't go into that, read more about it in the [official README](https://github.com/livepeer/go-livepeer/blob/master/README.md)    
 Download the latest mainnet-targeted livepeer and livepeer_cli from https://github.com/livepeer/go-livepeer/releases.  
 ```
+cd
 curl -s -L https://github.com/livepeer/go-livepeer/releases/download/0.2.4/livepeer_linux.tar.gz > livepeer_linux.tgz
 gzip -d -c livepeer_linux.tar.gz | tar xvf -
-cd livepeer_linux/
-./livepeer
 ```
 
 
@@ -128,7 +127,7 @@ hostname tc001.mydomain.com
 For this setup, All LivePeer-specific files (binaries, logs, ethereum accounts, keys, etc) live on a dedicated EBS volume under /d1. The EBS volume can be backed-up via EBS snapshots and easily attached to a new instance if necessary.  
 ```
 sudo mkdir -p /d1/livepeer/logs  
-sudo mv -i livepeer_linux /d1/livepeer/bin  
+sudo mv -i ~/livepeer_linux /d1/livepeer/bin  
 sudo chown -R ubuntu:ubuntu /d1/livepeer  
 cd /d1
 git clone git@github.com:alexlines/livepeer-transcoder-ops.git
@@ -175,6 +174,7 @@ Setup geth data directories on the attached EBS volume and copy systemd unit fil
 sudo mkdir /d2/geth-data
 sudo chown -R ubuntu:ubuntu /d2/geth-data
 sudo cp /d1/livepeer-transcoder-ops/private/config/geth/systemd/geth.service /etc/systemd/system/
+sudo cp /d1/livepeer-transcoder-ops/private/config/geth/geth-config.toml /d2/geth-data/
 ```
 If you plan to use existing .ethereum files or keys, copy them into place now in `/d2/geth-data/.ethereum`  
 start geth via systemd and watch the logs:
@@ -191,48 +191,56 @@ Wait a few minutes and make sure geth is grabbing latest blocks. Sometimes you h
 
 
 **Install systemd config for LivePeer**  
+If you are going to use existing LivePeer account data, go ahead and copy it into place now in `/d1/livepeer/.lpData/`  
 ```  
-??? If you have existing data files / keys, copy them into place now (.lpData, etc)   ??? 
 sudo cp /d1/livepeer-transcoder-ops/private/config/livepeer/systemd/livepeer-transcoder.service /etc/systemd/system/
 sudo systemctl enable livepeer-transcoder    [or reenable if copying updated config]
-sudo systemctl start|stop|restart livepeer-transcoder
-# check status and watch the logs
-systemctl status livepeer-transcoder.service
-sudo journalctl -u livepeer-transcoder.service -f
 ```  
-??? link: If you are going to use existing Ethereum accounts, go ahead and copy those into place in /d1/livepeer/.lpData/.  
+  
 Run LivePeer manually for the initial run to make sure it can:  
   * Connect to the local geth instance  
-  * Detect your existing Ethereum account / keys if they are in place OR  
-  * ??? Below needs link to security discussion  
-  * Create a new Ethereum account if necessary. For my installation, I created the initial account *without* a passphrase for operational reasons, taking into account all the security considerations discussed here. Your mileage may vary and my recommendation is to keep security as the top priority while adjusting for your own operational environment.  
-I am running LivePeer with the following params (as seen in the systemd unit config):  
+  * Detect your existing Ethereum account / keys if they are in place **OR**  
+  * Create a new Ethereum account if necessary. For my installation, I created this initial account *without* a passphrase for operational reasons, taking into account all the security considerations discussed elsewhere in this document. Your mileage may vary and my recommendation is to keep security as the top priority while adjusting for your own operational environment.  
+
+**Running live on the Ethereum mainnet**  
+* Transfer some ETH and LPT to your node - a small amount at first to confirm addresses and process.  
+* Run the livepeer binary by hand as an initial test. I am running LivePeer with the following params (as seen in the [systemd unit config](https://github.com/alexlines/livepeer-transcoder-ops/blob/master/private/config/livepeer/systemd/livepeer-transcoder.service)):  
 **Note:** This will run as a transcoder on **mainnet**, this is basically running live in production.  
 ```
-/d1/livepeer/bin/livepeer -datadir /d1/livepeer/.lpData -ipfsPath /d1/livepeer -log_dir /d1/livepeer/logs -ethUrl ws://127.0.0.1:8546 -v 6 -initializeRound -transcoder -publicIP 35.173.105.24 -gasPrice 0
+/d1/livepeer/bin/livepeer -datadir /d1/livepeer/.lpData -ipfsPath /d1/livepeer -log_dir /d1/livepeer/logs -ethUrl ws://127.0.0.1:8546 -v 6 -initializeRound -transcoder -publicIP <public ip> -gasPrice 0
 ```
 
-??? Now run from systemd  
-transfer ETH and LPT to node (small amount at first)  
-Now enroll as a transcoder  
+Now kill that process and start livepeer using systemd and watch the logs:
+```
+kill $(pgrep livepeer)
+sudo systemctl start livepeer-transcoder
+# check status and watch the logs
+sudo systemctl status livepeer-transcoder
+sudo journalctl -u livepeer-transcoder.service -f
+```
+
+Now use the livepeer command line utility to enroll as a transcoder and set transcoder config:  
+```
+/d1/livepeer/bin/livepeer_cli
+```
+Choose `13. Invoke multi-step "become a transcoder"`  
+
 
 
 **Operational Notes**  
 * Running with `initiliazeRound` is a nice thing to do - the round can't start until somebody calls it and `reward()` cannot be called until the round has been started. Running with `initializeRound` can get expensive when gas is high (I've seen ~$40)  
-* Making sure `reward()` gets called everyday is the most important thing right now, after making sure everything is up and running. This generally succeeds, but, in the absence of rock-solid monitoring and alerting on this event, you should manually check it every day. Go set a reminder in your calendar to check it every day at 4pm. While you're there, set another reminder at 9pm. If the call hasn't succeeded for the day, use the command line interface to call `reward()` manually. Some reasons I've seen that can cause it to fail:  
+* Making sure `reward()` gets called every day is the most important thing right now, after making sure everything is up and running. This generally succeeds, but, in the absence of rock-solid monitoring and alerting on this event, you should manually check it every day. Go set a reminder in your calendar to check it every day at 4pm. While you're there, set another reminder at 9pm. If the call hasn't succeeded for the day, use the command line interface to call `reward()` manually. Some reasons I've seen that can cause it to fail:  
   * You don't have enough ETH in your transcoder's account. You should monitor this and replenish as necessary.  
   * If gas prices spike, this can cause slowness and for transactions to fail, especially if you don't have enough funds (see above).  
-  * Unable to communicate with the geth node - I've seen the local geth node appear to run fine and continue to stay sync'd to latest blocks and log that it's submitting transactions (such as calls to reward), but they fail silently and no errors or warnings are produced. LivePeer [issue #455](https://github.com/livepeer/go-livepeer/issues/455) documents a problem similar to this. In such cases, I've restarted first the geth node, waited for it to sync (a couple minutes at most), and then restarted the livepeer node. This is annoying enough to consider restarting geth automatically on a nightly (!) basis.  
-* What is the best way to backup the account / credentials tied to the node?  
-* How can you migrate your transcoder to different hardware but maintain the same transcoder account and ID?  
-* What livepeer / ipfs / etc logs needs to be rotated?  
+  * Unable to communicate with the geth node - I've seen the local geth node appear to run fine and continue to stay sync'd to latest blocks and log that it's submitting transactions (such as calls to reward), but they fail silently and no errors or warnings are produced. LivePeer [issue #455](https://github.com/livepeer/go-livepeer/issues/455) documents a problem similar to this. In such cases, I've restarted first the geth node, waited for it to sync (a couple minutes at most), and then restarted the livepeer node. This is annoying enough to consider restarting geth automatically on a nightly (!) basis.    
+* What is the best way to backup the account / credentials tied to the node? For this setup, just create a snapshot of the EBS volume.  
+* What livepeer / ipfs / etc logs needs to be rotated? It looks like the only logs that livepeer currently writes are ipfs logs which, in this configuration, are written to /d1/livepeer/logs/ and are automatically rotated every 10MB, though not automatically compressed.  
 * Keep an eye on the LivePeer [Releases](https://github.com/livepeer/go-livepeer/releases) page for updates to the software, as well as the [discord](https://discord.gg/cBfD23u) and [forum](https://forum.livepeer.org/) discussions.  
 
 
 **LivePeer questions I had but was able to answer**  
 * **Note** Don't forget the [upcoming networking updates!](https://forum.livepeer.org/t/upcoming-networking-upgrades/298)  
-* The most complicated part is knowing the correct steps and order to take in the CLI to make sure the transcoder is active and how to debug if it isn't, also what options to start it with. There isn't an official walkthrough of recommended arguments to start LP with and then register on mainnet as a transcoder.  
-* Is it ok to call `reward()` more than once per round? Yes, it will just say "reward already called for this round."  
+* Is it ok to call `reward()` more than once per round? Yes, I think it will just say "reward already called for this round."  
 * Is it worth setting up a dedicated ipfs node in local network? Doesn't look like it's necessary at this time.  
 * GPU - Is it worth it to run with GPU? How much does it help? What specifically leverages the GPU - ffmpeg? short answer: Not yet  
   * Adding GPU Acceleration to transcoding is still an [open issue](https://github.com/livepeer/lpms/issues/33). 
@@ -243,9 +251,8 @@ Now enroll as a transcoder
   * See also the [Transcoder Design doc](https://github.com/livepeer/lpms/wiki/Transcoder-Design)  
   * There is a [GPU transcoding verficiation proposal](https://github.com/livepeer/research/issues/12) in [research projects](https://github.com/livepeer/research/projects/1#card-9975184)    
   * When GPU's can be meaningfully helpful, [P2 GPU instances](https://aws.amazon.com/ec2/instance-types/p2/) are one (very expensive) option, or [Elastic GPUs](https://aws.amazon.com/ec2/elastic-gpus/details/), which can be attached to certain instance types.  
-* What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason?  
-  * I guess the identity is just the eth address of the account, so as long as you migrate that to a new machine it should be fine    
-* Difference between reward, stake, pending stake, etc. 
+* What do you need to do to transfer your transcoder identity to a new box? eg if you need to migrate hardware for some reason? The identity of the transcoder node is just the eth address of the account, so as long as you migrate that to a new machine it should be fine - backup and restore your livepeer .lpData directory (but it's very sensitive and contains your private key, so be very careful how and where you back it up, encrypt it, limit access, make sure it's not a publicly accessible machine, storage account, etc.  
+* Explain difference between reward, stake, pending stake, etc. 
 
 
 **LivePeer open questions**  
@@ -253,28 +260,11 @@ Now enroll as a transcoder
 * Specifying `-log_dir` on the command line only moved where the ipfs log file got written, `livepeer` still wrote its log to stderr.  
 * Is it possible to transfer LPT from a transcoder to another account without `unbonding()` the entire stake? Is this done via CLI option #11 "transfer" or can you unbond (a certain number) and then call "withdraw stake" on just that portion?  
 * What ports should be open to internal network? Open to the world?  
-* Gas: Doug says 10Gwei is a safe price - does that mean you’ll pay 10Gwei every time?? or that’s just max price  
-* How much ETH should you keep in your account?  
+* How much ETH should you keep in your transcoder account?  
 * Capacity planning - how to estimate transcoding rate (how long to transcode each second of output video) based on machine resources?  
-* Unclear from docs: needs ffmpeg? the specially built static version? https://github.com/livepeer/ffmpeg-static  
-* How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right?   
+* How can you run multiple transcoder instances, behind a load balancer, for example, but have them all use the same identity? Because you just register as a single transcoder id, right? Pretty sure it's not yet possible.  
+* How to monitor demand in different regions? Would be great to know that there is more demand than capacity in Asia/Pacific, for example, and to spin up capacity there.  
 
-
-
-**Becoming an active transcoder on mainnet**  
-* **spin up a fresh node but try to put an old account in place before starting the livepeer binary**  
-* Fund your node with ETH and LPT and bond to yourself  
-* Specifying the Ethereum account - Eth Account Each Livepeer node should have an Ethereum account. Use -ethAccountAddr to specify the account address. You should make sure the keys to the account is in the keystore directory of ethDatadir you passed in.  
-
-
-
-**HTTP Query interface**  
-* `curl http://localhost:8935/getAvailableTranscodingOptions`  
-* Can also set broadcast config by POST'ing params to http://localhost:8935/setBroadcastConfig   
-
-
-**Future Architecture Directions**    
-  
 
 
 **Reference**   
@@ -354,11 +344,4 @@ Now enroll as a transcoder
 - Helpful to give the instance an DNS and/or ENS name?  
 - Better documentation of AWS Security groups, IAM users and permissions, ssh gateway host, etc  
 
-This document https://github.com/alexlines/livepeer-transcoder-ops/commits/988764a110b9b79cefde1f35e4086665ffbcff5f/livepeer-testnet.md
 
-
-**Notes to move elsewhere**  
-* yep, this is the port to poll to track status and info. Available commands are documented in [webserver.go](https://github.com/livepeer/go-livepeer/blob/ec288f43b60fbf3bd61f81b636538b5b004aaa86/server/webserver.go)  
-* Seems like it can send server metrics to http://viz.livepeer.org:8081/metrics ? see [livepeer.go](https://github.com/livepeer/go-livepeer/blob/master/cmd/livepeer/livepeer.go) interesting that it can end metrics by default, wonder if that can be redirected and to what kind of server. you can also specify the monitor host to send to  
-  * Maybe to the monitor server here? https://github.com/livepeer/go-livepeer/blob/master/monitor/monitor.go  
-  * Looks like there's a separate monitor server project https://github.com/livepeer/streamingviz  ... although it hasn't been touched in a year  
