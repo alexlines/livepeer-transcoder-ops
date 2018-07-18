@@ -1,5 +1,9 @@
 ## Running a LivePeer transcoder   
-The purpose of this project is to document my own approach to running a LivePeer transcoder in production. The goal is to run robust infrastructure for the LivePeer transcoding network and to share any supporting code or processes to help the community do the same. These are the early steps in building a robust operating framework in which to run a transcoder network. Some of the operational characteristics I'm working toward include:  
+The purpose of this project is to document my own approach to running a LivePeer transcoder in production. The goal is to run robust infrastructure for the LivePeer transcoding network and to share any supporting code or processes to help the community do the same. These are the early steps in building a robust operating framework in which to run a transcoder network.  
+
+If you just want to see the config steps with minimal commentary, check out [config-steps-brief.sh](/config-steps-brief.sh). For a full write-up of the approach, details, reasons for key decisions, and areas for future improvement, read on.  
+
+Some of the operational characteristics I'm working toward include:  
   * Availability (including fast recovery)  
   * Security  
   * Flexibility  / composability  
@@ -71,7 +75,7 @@ aws --profile notation ec2 run-instances \
 ```  
 
 
-**Allocate elastic ip  to have a stable public address**  
+**Allocate elastic ip for stable public address**  
 ```
 aws --profile notation ec2 allocate-address  
 aws --profile notation ec2 associate-address --instance-id <instance id> --public-ip <ip address>  
@@ -89,7 +93,7 @@ gzip -d -c livepeer_linux.tar.gz | tar xvf -
 
 
 System Ops  
-**Dedicated LivePeer volume**  
+**Prepare the LivePeer volume**  
 If the LivePeeer EBS volume was not created at instance instantiation, create and attach now.  
 100GB gp2 disk for LivePeer storage / operations  
 Adjust the availability zone to match the instance's az   
@@ -97,7 +101,7 @@ Adjust the availability zone to match the instance's az
 aws --profile notation ec2 create-volume --size 100 --region us-east-1 --availability-zone us-east-1a --volume-type gp2  
 aws --profile notation ec2 attach-volume --device /dev/sdg --instance-id <instance-id> --volume-id <volume-id>  
 ```
-Then login to the box and create filesystem, mount point, and add volume to fstab (device names may vary):  
+Then login to the instance and create filesystem, mount point, and add volume to fstab (device names may vary):  
 ```
 # ssh to instance and run locally on the box:  
 sudo mkfs.ext4 /dev/xvdg  
@@ -106,7 +110,7 @@ echo "UUID=<volume UUID> /d1 ext4 defaults 0 2" | sudo tee -a /etc/fstab
 sudo mount /d1    
 ```  
 
-**Dedicated geth volume**  
+**Prepare the geth volume**  
 If the geth EBS volume was not created at instance instantiation, create and attach now.  
 500GB gp2 disk for geth storage / operations  
 Adjust the availability zone to match the instance's az  
@@ -114,7 +118,7 @@ Adjust the availability zone to match the instance's az
 aws --profile notation ec2 create-volume --size 500 --region us-east-1 --availability-zone us-east-1a --volume-type gp2  
 aws --profile notation ec2 attach-volume --device /dev/sdh --instance-id <instance-id> --volume-id <volume-id>  
 ```
-Then login to the box and create filesystem, mount point, and add volume to fstab (device names may vary):
+Then login to the instance and create filesystem, mount point, and add volume to fstab (device names may vary):
 ```
 # ssh to instance and run locally on the box:  
 sudo mkfs.ext4 /dev/xvdh  
@@ -125,9 +129,9 @@ sudo mount /dev/xvdh /d2
 
 **Set the hostname**  
 ```
-hostname tc001.mydomain.com
-# add to /etc/hosts
-# replace contents of /etc/hostname (with only hostname, not FQDN)
+sudo hostname tc001.mydomain.com
+# add FQDN to /etc/hosts
+# And replace contents of /etc/hostname (with only hostname, not FQDN)
 ```
 
 
@@ -138,6 +142,7 @@ sudo mkdir -p /d1/livepeer/logs
 sudo mv -i ~/livepeer_linux /d1/livepeer/bin  
 sudo chown -R ubuntu:ubuntu /d1/livepeer  
 cd /d1
+# check out repo
 git clone git@github.com:alexlines/livepeer-transcoder-ops.git
 ```  
 
