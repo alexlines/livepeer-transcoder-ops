@@ -2,6 +2,13 @@
 Description=LivePeer Transcoder Service
 After=geth.service
 
+# disable start rate limiting, which can result in systemd abandoning 
+# a service if it fails to start too many times within the interval. 
+# There are good reasons to limit restarts, but we want to disable 
+# that for now and possible revisit in the future
+StartLimitIntervalSec=0
+
+
 [Service]
 User=ubuntu
 Group=ubuntu
@@ -31,12 +38,6 @@ Restart=always
 # which is probably overkill here, and possibly not being available 
 # to serve requests if wait too long between attempts
 RestartSec=3
-
-# disable start rate limiting, which can result in systemd abandoning 
-# a service if it fails to start too many times within the interval. 
-# There are good reasons to limit restarts, but we want to disable 
-# that for now and possible revisit in the future
-StartLimitIntervalSec=0
 
 [Install]
 WantedBy=multi-user.target

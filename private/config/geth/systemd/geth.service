@@ -2,6 +2,8 @@
 Description=Ethereum go client
 After=syslog.target network.target
 
+StartLimitIntervalSec=0
+
 [Service]
 User=ubuntu
 Group=ubuntu
@@ -17,8 +19,6 @@ TimeoutStopSec=180
 SendSIGKILL=no
 Restart=always
 RestartSec=20
-
-StartLimitIntervalSec=0
 
 [Install]
 WantedBy=multi-user.target
