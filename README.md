@@ -1,6 +1,8 @@
 ## Running a LivePeer transcoder   
 The purpose of this project is to document my own approach to running a LivePeer transcoder in production. The goal is to run robust infrastructure for the LivePeer transcoding network and to share any supporting code or processes to help the community do the same. These are the early steps in building a robust operating framework in which to run a transcoder network.  
 
+This is a long document and it would be easy to get the impression that running LivePeer is complicated and difficult. This is not the case. Running LivePeer itself is very straightforward and accessible to a wide audience. All the complexity comes from the fact that running any service in a highly-available, scalable way gets complicated.  
+
 If you just want to see the config steps with minimal commentary, check out [config-steps-brief.sh](/config-steps-brief.sh). For a full write-up of the approach, details, reasons for key decisions, and areas for future improvement, read on.  
 
 Some of the operational characteristics I'm working toward include:  
