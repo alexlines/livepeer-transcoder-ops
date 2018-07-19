@@ -1,0 +1,91 @@
+[agent]
+  collection_jitter = "0s"
+  debug = false
+  flush_interval = "1s"
+  flush_jitter = "0s"
+  hostname = ""
+  interval = "60s"
+  logfile = "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+  metric_batch_size = 1000
+  metric_buffer_limit = 10000
+  omit_hostname = false
+  precision = ""
+  quiet = false
+  round_interval = false
+
+[inputs]
+
+  [[inputs.cpu]]
+    fieldpass = ["usage_idle", "usage_iowait", "usage_user", "usage_system"]
+    interval = "60s"
+    percpu = true
+    totalcpu = false
+
+  [[inputs.disk]]
+    fieldpass = ["used_percent", "inodes_free"]
+    interval = "60s"
+
+  [[inputs.diskio]]
+    fieldpass = ["io_time", "write_bytes", "read_bytes", "writes", "reads"]
+    interval = "60s"
+    report_deltas = true
+
+  [[inputs.mem]]
+    fieldpass = ["used_percent"]
+    interval = "60s"
+
+  [[inputs.netstat]]
+    fieldpass = ["tcp_established", "tcp_time_wait"]
+    interval = "60s"
+
+  [[inputs.swap]]
+    fieldpass = ["used_percent"]
+    interval = "60s"
+
+  [[inputs.tail]]
+    data_format = "value"
+    data_type = "string"
+    file_state_folder = "/opt/aws/amazon-cloudwatch-agent/logs/state"
+    name_override = "raw_log_line"
+
+    [[inputs.tail.file_config]]
+      file_path = "/d1/livepeer/logs/ipfs.log"
+      from_beginning = true
+      log_group_name = "ipfs.log"
+      pipe = false
+
+    [[inputs.tail.file_config]]
+      file_path = "/var/log/syslog"
+      from_beginning = true
+      log_group_name = "syslog"
+      pipe = false
+
+[outputs]
+
+  [[outputs.cloudwatch]]
+    force_flush_interval = "60s"
+    namespace = "CWAgent"
+    region = "us-east-1"
+    tagexclude = ["host"]
+    [outputs.cloudwatch.tagdrop]
+      log_group_name = ["*"]
+
+  [[outputs.cloudwatchlogs]]
+    file_name_field_key = "file_name"
+    file_state_folder = "/opt/aws/amazon-cloudwatch-agent/logs/state"
+    log_entry_field_key = "value"
+    log_group_name_tag_key = "log_group_name"
+    log_stream_name = "i-07f7578cdaedb4c0f"
+    log_stream_name_tag_key = "log_stream_name"
+    log_timestamp_field_key = "log_timestamp"
+    multi_line_start_field_key = "multi_line_start"
+    offset_field_key = "offset"
+    region = "us-east-1"
+
+[processors]
+
+  [[processors.ec2tagger]]
+    ec2_instance_tag_keys = ["aws:autoscaling:groupName"]
+    ec2_metadata_tags = ["ImageId", "InstanceId", "InstanceType"]
+    [processors.ec2tagger.tagdrop]
+      log_group_name = ["*"]
