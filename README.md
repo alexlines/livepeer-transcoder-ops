@@ -179,7 +179,7 @@ sudo apt-get update
 sudo apt-get install -y ethereum  
 ```
 In this configuration, geth's data, logs, and any keys (but not binaries, which get installed in default locations via apt-get install) all live on a dedicated EBS volume under /d2/ for easy backups via snapshots and to easily attach to a new instance.  
-Setup geth data directories on the attached EBS volume. We're running geth under systemd and passing geth's options via a [toml config file](https://github.com/alexlines/livepeer-transcoder-ops/blob/master/private/config/geth/geth-config.toml). Copy the config file and systemd unit file into place:  
+Setup geth data directories on the attached EBS volume. We're running geth under systemd and passing geth's options via a [toml config file](/private/config/geth/geth-config.toml). Copy the config file and systemd unit file into place:  
 ```
 sudo mkdir /d2/geth-data
 sudo chown -R ubuntu:ubuntu /d2/geth-data
@@ -297,10 +297,11 @@ Any monitoring is better than no monitoring. If you can't integrate the LivePeer
   - Regional routing / responding to regional demand  
   - Auto-scaling  
 - Monitoring, Alerting, Metrics Collection  
-  - Health checks of LivePeer instance  
+  - Better health checks of LivePeer instance and processes  
   - Go and systemd both support watchdog for process health monitoring http://0pointer.de/blog/projects/watchdog.html  
   - It would be nice if the livepeer internal webserver supported a call to `/health` for example, which could be checked by a nagios/etc plugin, as well as by a load balancer which was monitoring the health of a pool of transcoders.  You could sortof fake this today by using a call to `http://<transcoder ip>:8935/nodeID` and make sure it returns the expected nodeID, but a proper `/health` function could better check a few vital signs.  
   - Monitor and alert if reward() doesn't get called. A few ways to monitor this:  
+    - I started a very basic checker script, mostly based on code in [livepeer_cli](https://github.com/livepeer/go-livepeer/tree/master/cmd/livepeer_cli) that queries the local livepeer internal webserver for LastRewardRound and, if it doesn't match currentRound, could send an alert. There's not much there, but you can [see the code here](utils/monitor_reward_call.go)  
     - Query the local livepeer node via http:  
     ```
       $ curl http://127.0.0.1:8935/transcoderInfo
