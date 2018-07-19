@@ -235,6 +235,11 @@ Now use the livepeer command line utility to enroll as a transcoder and set tran
 ```
 Choose `13. Invoke multi-step "become a transcoder"`  
 
+**Initial monitoring and notification**  
+Any monitoring is better than no monitoring. If you can't integrate the LivePeer transcoder into your existing monitoring and alerting infrastructure for any reason, you can get basic monitoring and alerting functionality up and running quickly using AWS CloudWatch. I may include more detail on how to do this all quickly from the command line, but for now see the following docs:  
+* [Install the CloudWatch Agent](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html) on your instance  
+* [Setup alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html) on basic health and activity metrics such as disk space, swap activity, CPU, etc. Ideally you also want to alarm if LivePeer or geth isn't running or if `reward()` hasn't been called (more about that elsewhere in this document).  
+* I added [my AWS CloudWatch agent config](private/config/aws-cloudwatch-agent) to this repo, but it's very basic.  
 
 
 **Operational Notes**  
