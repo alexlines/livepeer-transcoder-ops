@@ -25,9 +25,9 @@
             }
         }
     ],
-    "ImageId": "ami-85f9b8fa",
-    "InstanceType": "c4.2xlarge",
-    "KeyName": "notation-dev",
+    "ImageId": "ami-0b425589c7bb7663d",
+    "InstanceType": "c4.4xlarge",
+    "KeyName": "form72",
     "Monitoring": {
         "Enabled": true
     },
