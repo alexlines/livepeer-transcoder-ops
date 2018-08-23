@@ -24,12 +24,13 @@ WorkingDirectory=/d1/livepeer/bin
 #    -datadir, -ipfsPath, -log_dir: use attached vol for all LivePeer data
 #    -ethUrl          : connect to our own geth instance
 #    -initializeRound : try to initialize the round if necessary
-#    -publicIP        : set publicIP to our elastic ip address
 #    -gasPrice 0      : rely on the gas oracle to automatically set the price
 #    -transcoder      : run as a transcoder
+#    -monitor         : send metrics to monitoring endpoint http://metrics-mainnet.livepeer.org/api/events
+#    -serviceAddr     : public IP:port of transcoder that broadcasters connect to, must match on-chain Service URI
 #    -v 6             : run with verbose logging for now
 
-ExecStart=/d1/livepeer/bin/livepeer -datadir /d1/livepeer/.lpData -ipfsPath /d1/livepeer -log_dir /d1/livepeer/logs -ethUrl ws://127.0.0.1:8546 -initializeRound -transcoder -publicIP 35.173.105.24 -gasPrice 0 -v 6
+ExecStart=/d1/livepeer/bin/livepeer -datadir /d1/livepeer/.lpData -ipfsPath /d1/livepeer -log_dir /d1/livepeer/logs -ethUrl ws://127.0.0.1:8546 -initializeRound -transcoder -monitor -serviceAddr tx.form72.com:8443 -gasPrice 0 -v 6
 
 # always attempt to restart the service
 Restart=always
