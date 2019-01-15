@@ -12,12 +12,18 @@ NetworkId = 1
 SyncMode = "light"
 NoPruning = false
 LightPeers = 100
-DatabaseCache = 384
-TrieCache = 128
+DatabaseCache = 256
+TrieCleanCache = 128
+TrieDirtyCache = 128
 TrieTimeout = 3600000000000
-MinerGasPrice = 18000000000
+MinerGasFloor = 8000000
+MinerGasCeil = 8000000
+MinerGasPrice = 1000000000
 MinerRecommit = 3000000000
+MinerNoverify = false
 EnablePreimageRecording = false
+EWASMInterpreter = ""
+EVMInterpreter = ""
 
 [Eth.Ethash]
 CacheDir = "ethash"
@@ -48,6 +54,7 @@ Percentile = 60
 [Shh]
 MaxMessageSize = 1048576
 MinimumAcceptedPOW = 2e-01
+RestrictConnectionBetweenLightClients = true
 
 [Node]
 DataDir = "/d2/geth-data/.ethereum"
